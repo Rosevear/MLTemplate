@@ -40,11 +40,24 @@ conda create --name <you_env_name> python=3.6
 
     conda install tensorflow
 
-7. Verify that the installation was successful: you should see the version displayed without any errors (warnings about unoptimized binaries for your compute architecture are OK. There are different versions of tensorflow that allow for CPU specific optimizations to train models faster, but this typically requires building tensorflow from source. See here for more info if interested)
+7. Verify that the installation was successful: you should see the version displayed without any errors (warnings about unoptimized binaries for your compute architecture are OK. There are different versions of tensorflow that allow for CPU specific optimizations to train models faster, but this typically requires building tensorflow from source. See here for more info).
 
 python -c "import tensorflow as tf; print(tf.__version__)"
 
+Anaconda Cloud also has a gpu-specific installation of tensorflow that will download and manage the necessary GPU API's (e.g. CUDA) as well. 
+See the following for more information on the relationship between CPU and GPU packages within the Conda ecosystem: https://docs.anaconda.com/anaconda/user-guide/tasks/tensorflow/ and https://www.anaconda.com/tensorflow-in-anaconda/
+
+NOTE: GPE enabled tensorflow requires that the relevant CUDA and CUDAnn libraries are also installed, along with an NVIDIA driver for your GPU. The Conda package manager will handle the former software requirements but not the latter.
+
+Finally, intended GPU itself must be CUDA enabled. See here for a list of CUDA enabled Nvidia products: https://developer.nvidia.com/cuda-gpus
+
+See here https://www.tensorflow.org/install/gpu for installation instructions and requirements for dpu enabled tensorflow
+
 8. To install keras: Keras is a high level Deep Learning API that supports multiple ML frameworks as a backend (like Tensorflow): https://keras.io/.
+
+Since tensorflow 2.0 tensorflow comes shipped with it's own implementation of the Keras API, with tensorflow specific enhancements. See here for more detail: https://blog.tensorflow.org/2018/12/standardizing-on-keras-guidance.html
+
+To install the Keras github project (independent of Tensorflow), perform the following.
 
     conda install keras
 
