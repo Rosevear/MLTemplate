@@ -3,6 +3,9 @@ VEE Automation Exception Prototype
 This repo is a research prototype for the VEE Automation Exception Project by Harris Utilities Smartworks.
 See https://confluence.harrissmartworks.com/display/RD/Project+Notes%3A+VEE+Exception+Automation for more detail.
 
+########## Dependency installation ########
+conda env create -f VEE.yml
+
 #########Setting up an ML development environment with Anaconda#########
 
 NOTE: These instructions are for Windows 10
