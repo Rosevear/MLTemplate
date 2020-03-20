@@ -67,16 +67,23 @@ To install the Keras github project (independent of Tensorflow), perform the fol
 
 10. Install sci-kit learn: scikit-learn is a traditional machine learning library, that also features a number of helpful functions for running ML experiments more generally: https://scikit-learn.org/stable/
 
-    conda install -c anaconda scikit-learn
+    conda install scikit-learn
 
 11. Validate sklearn installed
 
     python -c "import sklearn; print(sklearn.__version__)"
 
-12 Install pandas: the de facto standard data analysis library in the python ecosystem: https://pandas.pydata.org/
+12. Install pandas: the de facto standard data analysis library in the python ecosystem: https://pandas.pydata.org/
     conda install pandas
 
+13. Install mlflow: a leading open source experiment management framework. This is not yet part of the official Anaconda distribution. However, the associated Anaconda Cloud package repository contains a number of additional 'channels' which conda can search and pull additional packages from. One of the most well known is conda-forge. Perform the steps below to download and install mlflow from the forge, or see here about configuring conda to search the forge automatically: https://conda-forge.org/docs/user/introduction.html
+    conda install -c conda-forge mlflow
+
+14. Install DVC: an open source data version control system
+    conda install -c conda-forge dvc
+
 ######Setting up VSCode########
+TODO:
 
 ######Setting up Jupyter Lab#######
 
