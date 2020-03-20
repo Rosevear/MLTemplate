@@ -86,7 +86,7 @@ To install the Keras github project (independent of Tensorflow), perform the fol
 
     Workaround is to use the pip package instead
 
-    pip install mlflow
+    pip install mlflow  –upgrade-strategy only-if-needed
 
 14. Install DVC: an open source data version control system
     conda install -c conda-forge dvc
