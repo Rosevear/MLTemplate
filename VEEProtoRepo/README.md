@@ -170,6 +170,36 @@ While the artifact store is where the models will be saved, and is actually trea
 See https://stackoverflow.com/questions/52331254/how-to-store-artifacts-on-a-server-running-mlflow and https://thegurus.tech/mlflow-production-setup/ for examples.
 
 
+#####Data Version Control########
+Large data files can be problematic for vanilla git to handle, especially when the workflow in question demands multiple different versions of large data sets.
+DVC (dta version control, see https://dvc.org/doc/home) is a software solution for managing data and model versioning in an integrated way with git.
+
+See https://dvc.org/doc/use-cases/versioning-data-and-model-files for an example use case of DVC to version data nad/or model files: 
+
+
+
+
+Basic setup and usage
+
+dvc init
+git commit -m"Initialize DVC project" #NOTE: when using dvc, we still need to use git to update the relevant .dvs configuration files and related .gitignore files. 
+
+
+dvc remote add -d <name> <url> See https://dvc.org/doc/command-reference/remote/add for the different remote storage options that can be utilized with DVC
+git commit .dvc/config -m "Configure remote"
+
+
+dvc add data/data.xml #add the data
+git add data/.gitignore data/data.xml.dvc
+git commit -m "Add raw data to project"
+
+dvc push #Push to our remote storage
+
+dvc pull #Get all of the data referenced by any DVC-files in the project (dvc pull data/data.xml.dvc #Specify a particular data set or file if you want that individually)
+
+The above commands should suffice for general prototyping purposes (at least to start). DVC offers a lot more in terms of connecting the relevant code and data files otgether in a way that allows for the creation of reproducible pipelines, that may be worth looking into if that can't be handled easily enough with mlflow alone.
+See https://dvc.org/doc/tutorials/get-started/connect-code-and-data
+
 Project Organization
 ------------
 
