@@ -1,11 +1,11 @@
 name: VEEProto
 
-conda_env: cnda.yaml
+conda_env: conda.yaml
 
 entry_points:
     main:
         parameters:
-            training_data: {type: string, default: "INSERT DEFAULT HERE"}
+            training_data: path
             epochs: {type: int, default: 1}
             batch_size: {type: int, default: 16}
             test_ratio: {type: float, default: 0.2}

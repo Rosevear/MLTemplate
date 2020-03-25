@@ -113,8 +113,13 @@ Any additional environments to the one specified in the above command must have 
 There appears to be an issue with conda version 4.7 currently. See https://github.com/conda/conda/issues/8836
 If encountering this error try running conda init bash and restarting the shell as per https://github.com/conda/conda/issues/8836#issuecomment-514026318
 
-######Running the experiment#######
-TODO:
+######Project Configuration#######
+This project uses MLFlow as an experiment management framework (see https://mlflow.org/docs/latest/index.html).
+
+The MLProject.txt file specifies both the execution environment (docker, conda, system), and the entry points for running different portions of the project. This particular project uses a conda environment, which details all of the dependencies and channels used to download those dependencies in the conda.yml file. To run experiments via specific entry points see: https://mlflow.org/docs/latest/projects.html#running-projects
+
+
+
 
 Project Organization
 ------------
