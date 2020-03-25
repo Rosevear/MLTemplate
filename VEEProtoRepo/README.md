@@ -114,7 +114,7 @@ Any additional environments to the one specified in the above command must have 
 
     conda install -n <other_environment> ipykernel
 
-There appears to be an issue with conda version 4.7 currently. See https://github.com/conda/conda/issues/8836
+There appears to be an issue with conda version 4.7 currently (as of Friday, March 20th, 2020). See https://github.com/conda/conda/issues/8836
 If encountering this error try running conda init bash and restarting the shell as per https://github.com/conda/conda/issues/8836#issuecomment-514026318
 
 ######Project Configuration#######
