@@ -4,7 +4,10 @@ This repo is a research prototype for the VEE Automation Exception Project by Ha
 See https://confluence.harrissmartworks.com/display/RD/Project+Notes%3A+VEE+Exception+Automation for more detail.
 
 ########## Dependency installation ########
-conda env create -f VEE.yml
+
+It is possible to install dependencies via the use of an environment file (in .yml format) which captures the relevant conda and pip dependencies.
+
+conda env create -f conda.yml
 
 #########Setting up an ML development environment with Anaconda#########
 
@@ -92,6 +95,7 @@ To install the Keras github project (independent of Tensorflow), perform the fol
     conda install -c conda-forge dvc
 
 ######Setting up VSCode########
+
 TODO:
 
 ######Setting up Jupyter Lab#######
