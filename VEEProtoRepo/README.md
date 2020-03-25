@@ -118,11 +118,56 @@ There appears to be an issue with conda version 4.7 currently (as of Friday, Mar
 If encountering this error try running conda init bash and restarting the shell as per https://github.com/conda/conda/issues/8836#issuecomment-514026318
 
 ######Project Configuration#######
+
 This project uses MLFlow as an experiment management framework (see https://mlflow.org/docs/latest/index.html).
 
-The MLProject.txt file specifies both the execution environment (docker, conda, system), and the entry points for running different portions of the project. This particular project uses a conda environment, which details all of the dependencies and channels used to download those dependencies in the conda.yml file. To run experiments via specific entry points see: https://mlflow.org/docs/latest/projects.html#running-projects
+The MLProject file specifies both the execution environment (docker, conda, system), and the entry points for running different portions of the project. This particular project uses a conda environment, which details all of the dependencies and channels used to download those dependencies in the conda.yml file. To run experiments via specific entry points see: https://mlflow.org/docs/latest/projects.html#running-projects
 
+#####Runs and Experiments######
+See  https://mlflow.org/docs/latest/cli.html#mlflow-run for notes on running projects from the command line and here for more comprehensive CLI docs: https://mlflow.org/docs/latest/cli.html#mlflow-run 
 
+Experiments are collections of runs that are grouped together for a common task. You can specify a run at the command line when kicking off a run, or set a default experiment 
+via the python api or environment variable. See https://www.mlflow.org/docs/latest/tracking.html#organizing-runs-in-experiments for more detail.
+
+For our purposes we use an MLProject file, so the general format for executing a run is as follows: 
+ mlflow run --no-conda -P key=value --experiment-name <name value> --entry-point  <entry value> project URI
+
+Short description of the options
+
+The --no-conda argument is to tell mlfow that we are already in a conda environment, and that it does not need to try and setup its own and install the necessary dependencies.
+
+-P specifies the parameters to pass in as key value pairs. These values must conform to the datatype specified in the MLProject file, and will override the default values stored there.
+
+--experiment-name Specifies what experiment to group the current run under. This is optional and a default will be used if not specified.
+
+--entry-point Specifies the actual python script to execute with the specified parameters. Each entry point must be configured in the MLProject file. If no entry-point is specified the main entry point will be used as default
+
+project URI Specifies the local file system or git repository path which contains the MLProject file that will be used to execute the run
+
+So, an example command line rune might look as follows:
+
+mlflow run --no-conda -P training_data=./data/raw/sonar.csv --experiment-name test1 --entry-point main .
+
+##### Tracking and Viewing Run Data ######
+
+Local Tracking
+If you log runs to a local mlruns directory, execute  mlflow ui in the directory above it from the command line, to load the logged metadata for all runs that are saved locally. You will be able to access the ui at http://localhost:5000. From here you can search for runs/params/etc, see associated models, and perform some basic visualization of logged metrics. See https://mlflow.org/docs/latest/tracking.html#where-runs-are-recorded for more detail on the default storage location and https://mlflow.org/docs/latest/cli.html#mlflow-ui for options when running the UI.
+
+Remote Tracking
+To run the UI from a remote tracking server you must configure the tracker to log to a server. See https://mlflow.org/docs/latest/tracking.html#tracking-server for details on configuring a remote tracking server and https://mlflow.org/docs/latest/tracking.html#logging-to-a-tracking-server for details on how to log to it.
+
+TODO: Determine if whe we want to store run results on one of the smartworks servers (ftp.metersense.com?) 
+Both client and server require small pysftp to be installed. See https://mlflow.org/docs/latest/tracking.html#sftp-server
+
+Example command line call to run the server
+
+mlflow server --backend-store-uri /mnt/persistent-disk --default-artifact-root s3://my-mlflow-bucket/ --host 0.0.0.0
+
+See https://mlflow.org/docs/latest/cli.html#mlflow-server for more detail on options when running the remote tracking server.
+
+NOTE: it seems that the --backend-store-uri is only for the metadata of a run, and refers to where on the tracking server to store it (in a file or db backend).
+While the artifact store is where the models will be saved, and is actually treated as belonging to the client that is executing the run, which in turn makes requests ot the remote tracking server (whihc logs meta data and whatnot). The remote server's URI is set via the MLFLOW_TRACKING_URI.
+See https://stackoverflow.com/questions/52331254/how-to-store-artifacts-on-a-server-running-mlflow and https://thegurus.tech/mlflow-production-setup/ for examples.
 
 
 Project Organization

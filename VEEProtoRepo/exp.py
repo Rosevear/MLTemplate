@@ -7,10 +7,7 @@
 # from sklearn.metrics import mean_absolute_error
 # from statsmodels.tsa.ar_model import AR, ARResults
 
-#Load environment variables
-# project_dir = constants.ROOT_DIR
-# dotenv_path = os.path.join(project_dir, '.env')
-# dotenv.load_dotenv(dotenv_path)
+
 
 from __future__ import print_function
 import constants
@@ -23,6 +20,14 @@ import dotenv
 
 
 if __name__ == "__main__":
+
+    #Load environment variables
+    project_dir = constants.ROOT_DIR
+    dotenv_path = os.path.join(project_dir, '.env')
+    dotenv.load_dotenv(dotenv_path)
+
+    #mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI'))
+
     X = np.array([-2, -1, 0, 1, 2, 1]).reshape(-1, 1)
     y = np.array([0, 0, 1, 1, 1, 0])
     lr = LogisticRegression()
