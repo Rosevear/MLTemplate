@@ -4,6 +4,7 @@ from pathlib import Path
 from pandas import read_csv
 import logging
 import config
+import utils
 
 
 """
@@ -25,6 +26,9 @@ def load_csv(path):
 
 if __name__ == '__main__':
 
+    #Set random seeds for reproducibility
+    utils.freeze_random_generators(config.RANDOM_SEED)
+
     logging.basicConfig(filename=config.DATA_LOGFILE,
                         level=logging.INFO, format=config.LOG_FORMAT)
     logger = logging.getLogger(__name__)
@@ -34,4 +38,6 @@ if __name__ == '__main__':
     logger.info('Starting the data processing pipeline for the data set {}'.format(
         config.CUR_RAW_DATA_FILE))
     data_frame = load_csv(data_source)
+
+
 
