@@ -176,9 +176,6 @@ DVC (dta version control, see https://dvc.org/doc/home) is a software solution f
 
 See https://dvc.org/doc/use-cases/versioning-data-and-model-files for an example use case of DVC to version data nad/or model files: 
 
-
-
-
 Basic setup and usage
 
 dvc init
