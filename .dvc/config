@@ -1,4 +1,3 @@
+
 ['remote "localStorage"']
-url = C:\Users\cr89536\Code\smartworks\ML\VEEProto\data
-[core]
-remote = localStorage
+url = C:\Users\cr89536\Code\smartworks\ML\DataStore
