@@ -3,10 +3,11 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='src',
-    packages=find_packages(),
+    name='VEEPrototype',
+    packages=find_packages("src"),
+    package_dir={"": "src"},
     version='0.1.0',
-    description='REsearch prototype for VEE exception automation',
+    description='Research prototype for VEE exception automation',
     author='Harris Utilities Smartworks',
     license='',
 )

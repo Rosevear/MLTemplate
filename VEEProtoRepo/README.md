@@ -188,7 +188,6 @@ git commit -m"Initialize DVC project" #NOTE: when using dvc, we still need to us
 dvc remote add -d <name> <url> See https://dvc.org/doc/command-reference/remote/add for the different remote storage options that can be utilized with DVC
 git commit .dvc/config -m "Configure remote"
 
-
 dvc add data/data.xml #add the data
 git add data/.gitignore data/data.xml.dvc
 git commit -m "Add raw data to project"
@@ -197,8 +196,17 @@ dvc push #Push to our remote storage
 
 dvc pull #Get all of the data referenced by any DVC-files in the project (dvc pull data/data.xml.dvc #Specify a particular data set or file if you want that individually)
 
-The above commands should suffice for general prototyping purposes (at least to start). DVC offers a lot more in terms of connecting the relevant code and data files otgether in a way that allows for the creation of reproducible pipelines, that may be worth looking into if that can't be handled easily enough with mlflow alone.
+The above commands should suffice for general prototyping purposes (at least to start). DVC offers a lot more in terms of connecting the relevant code and data files together in a way that allows for the creation of reproducible pipelines, that may be worth looking into if that can't be handled easily enough with mlflow alone.
 See https://dvc.org/doc/tutorials/get-started/connect-code-and-data
+
+######Development Mode Installation######
+In order for the modules in the src directory to be properly accessible to the main experiment file (and to each other) they need to be on the PYTHONPATH. 
+This can be done most effectively by using setuptools to install the packages (folders with an __init__.py file) they reside in into the site-packages directory, 
+which is by default included in the PYTHONPATH.
+
+To install the packages run the setup.py script in the root directory (where it is located) with the develop option. This will forge links between the packages such that any changes to them will be reflected in the site-packages directory, so that one does not have to continually reinstall the packages after making changes to them.
+
+Run the following: python setup.py develop
 
 Project Organization
 ------------

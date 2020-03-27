@@ -9,8 +9,11 @@ entry_points:
             epochs: {type: int, default: 1}
             batch_size: {type: int, default: 16}
             test_ratio: {type: float, default: 0.2}
-            seed: {type: int, default: 97531}
+            seed: {type: int, default: 9500}
         command: "python exp.py --training-data {training_data}
                               --batch-size {batch_size}
                               --epochs {epochs}
                               --test-ratio {test_ratio}"
+
+    process_data:
+        command: "python src/data/make_dataset.py"
