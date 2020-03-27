@@ -1,0 +1,8 @@
+md5: 19d3aa38b6411157b93ddb229891ba4f
+wdir: ../..
+outs:
+- md5: b4f250f1789a9dc37b07a39e53ad05ce
+  path: data/raw/BTUSampleTotal.csv
+  cache: true
+  metric: false
+  persist: false
