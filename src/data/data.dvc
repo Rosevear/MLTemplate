@@ -1,0 +1,8 @@
+md5: 6c4188901c14b74c75606a4d4013212a
+wdir: .
+outs:
+- md5: ced21f4bce38946755bf376a36509330.dir
+  path: C:\Users\cr89536\Code\smartworks\ML\VEEProto\data
+  cache: true
+  metric: false
+  persist: false
