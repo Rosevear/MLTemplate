@@ -32,6 +32,9 @@ if __name__ == "__main__":
     #Load environment variables
     dotenv.load_dotenv(dotenv.find_dotenv())
 
+    #Set random seeds for reproducibility
+    utils.freeze_random_generators(config.RANDOM_SEED)
+    
     logger = utils.setup_logger()
 
     print("Loading processed data for experiment...")
