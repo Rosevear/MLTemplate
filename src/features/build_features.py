@@ -24,10 +24,11 @@ def construct_features(data):
 
 def encode_data(data, categorical_columns, logger):
     """
-    Encodes ata for use in machine learning algorithms by: transforming categorical variables to 1-hot vectors 
+    Encodes data for use in machine learning algorithms by: transforming categorical variables to 1-hot vectors
+    NOTE: Data is assumed to be a numpy array or pandas dataframe
     """
     try:
-        transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(), categorical_columns)])
+        transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(sparse=True), categorical_columns)],  remainder='passthrough')
         return transformer.fit_transform(data)
     except Exception as e:
         logger.info(
@@ -62,14 +63,12 @@ if __name__ == '__main__':
     save_location = config.PROCESSED_DATA_DIR / config.CUR_DATA_FILE
     utils.save_csv(save_location, data, 'utf-8', False, logger)
 
-    print("Encoding/formatting the data for ML algorithm usage")
-    #We want to 1 hot encode the LOCATION_CLASS, PREV_STATUS, PREV_STATUS2, DAY, and MONTH features
-    categorical_columns = [0, 4, 5, 10, 11]
+    print("Encoding/formatting the data for ML algorithm usage...")
+    #Columns witch which to use 1-hot encoding
+    categorical_columns = ['LOCATION_CLASS', 'PREV_STATUS', 'PREV_STATUS2', 'DAY', 'MONTH']
 
-    #TODO: Standardize or feature scale the numerical data for metric or gradient descent based methods. Need to do that inside the cross validation loop to prevent bias
+    #TODO: Standardize or feature scale the numerical data for metric or gradient descent based methods. May need to do that inside the cross validation loop to prevent bias: double check this
     #We want to scale the READ_VALUE, PREV_READ, and PREV_READ2 features
     #numerical_columns = [1, 2, 3]
-
+    
     data = encode_data(data, categorical_columns, logger)
-    print("Displaying the first few rows of the encoded data...")
-    print(data[0:10, :])
