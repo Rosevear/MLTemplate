@@ -36,7 +36,7 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
 
     print("Loading the raw data set...")
-    data_source = config.INTERIM_DATA_DIR / config.CUR_DATA_FILE
+    data_source = config.RAW_DATA_DIR / config.CUR_DATA_FILE
     logger.info('Starting the data processing pipeline for the data set {}'.format(
         config.CUR_DATA_FILE))
     data = utils.load_csv(data_source, logger)
