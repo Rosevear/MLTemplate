@@ -30,10 +30,7 @@ if __name__ == '__main__':
     #Set random seeds for reproducibility
     utils.freeze_random_generators(config.RANDOM_SEED)
 
-    #Logging setup
-    logging.basicConfig(filename=config.DATA_LOGFILE,
-                        level=logging.INFO, format=config.LOG_FORMAT)
-    logger = logging.getLogger(__name__)
+    logger = utils.setup_logger()
 
     print("Loading the raw data set...")
     data_source = config.RAW_DATA_DIR / config.CUR_DATA_FILE

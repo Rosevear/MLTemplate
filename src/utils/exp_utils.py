@@ -2,6 +2,7 @@ import random
 import config
 import numpy as np
 import pandas as pd
+import logging
 
 def freeze_random_generators(random_seed):
     """
@@ -43,6 +44,15 @@ def save_csv(path, data, encoding, keep_indexes, logger):
     except Exception as e:
         logger.info(
             'There was a problem saving the data set {}: {}'.format(path, str(e)))
+
+def setup_logger():
+    """
+    Sets up a logger for tracking experiment info. See constants.py in config folder to specify the level, format, and log file to write to
+    """
+
+    logging.basicConfig(filename=config.LOGFILE,
+                        level=config.LOG_LEVEL, format=config.LOG_FORMAT)
+    return logging.getLogger(__name__)
 
 
 
