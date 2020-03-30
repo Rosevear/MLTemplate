@@ -1,5 +1,7 @@
 import random
+import config
 import numpy as np
+import pandas as pd
 
 def freeze_random_generators(random_seed):
     """
@@ -15,6 +17,32 @@ def freeze_random_generators(random_seed):
 
     random.seed(random_seed)
     np.random.seed(random_seed)
+
+
+def load_csv(path, logger):
+    """
+    Loads the data stored in the csv file present on the provided path
+    and returns the corresponding Pandas dataframe object (or series if the data is one-dimensional)
+    """
+
+    logger.info('Loading data set {}'.format(path))
+    try:
+        return pd.read_csv(path, header=0, squeeze=True)
+    except Exception as e:
+        logger.info(
+            'There was a problem loading the data set {}: {}'.format(path, str(e)))
+
+
+def save_csv(path, data, encoding, keep_indexes, logger):
+    """
+    Saves the provided pandas dataframe object in csv file format to the interim data directory, in the provided encoding, with/without the in-memory indexes of the data frame object, as specified by keep_indexes.
+    """
+
+    try:
+        data.to_csv(path, encoding='utf-8', index=False)
+    except Exception as e:
+        logger.info(
+            'There was a problem saving the data set {}: {}'.format(config.CUR_RAW_DATA_FILE, str(e)))
 
 
 
