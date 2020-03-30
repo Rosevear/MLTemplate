@@ -41,7 +41,7 @@ def process_data(data):
         return data
     except Exception as e:
         logger.info(
-            'There was a problem processing the data set {}: {}'.format(path, str(e)))
+            'There was a problem processing the data set: {}'.format(str(e)))
 
 if __name__ == '__main__':
 
@@ -57,15 +57,15 @@ if __name__ == '__main__':
     data_source = config.RAW_DATA_DIR / config.CUR_RAW_DATA_FILE
     logger.info('Starting the data processing pipeline for the data set {}'.format(
         config.CUR_RAW_DATA_FILE))
-    
     data = load_csv(data_source)
+    
     data = process_data(data)
     
     print("Fetching the first few rows of data to display...")
     print(data.head(10))
 
-    #Sav the transformed data set
-    data.to_csv(config.PROCESSED_DATA_DIR)
+    #SavE the transformed data set
+    data.to_csv(config.PROCESSED_DATA_DIR / config.CUR_RAW_DATA_FILE, encoding='utf-8', index=False)
 
 
 
