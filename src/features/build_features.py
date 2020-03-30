@@ -1,4 +1,9 @@
-def featurize_data(data):
+import config
+import utils
+import logging
+import pandas as pd
+
+def construct_features(data):
     """
     Processes the provided pandas dataframe object by:
     
@@ -13,4 +18,33 @@ def featurize_data(data):
         return data
     except Exception as e:
         logger.info(
-            'There was a problem processing the data set: {}'.format(str(e)))
+            'There was a problem constructing the feature vector for the provided data set: {}'.format(str(e)))
+
+
+if __name__ == '__main__':
+
+    #Set random seeds for reproducibility
+    utils.freeze_random_generators(config.RANDOM_SEED)
+
+    #Logging setup
+    logging.basicConfig(filename=config.DATA_LOGFILE,
+                        level=logging.INFO, format=config.LOG_FORMAT)
+    logger = logging.getLogger(__name__)
+
+    print("Loading the raw data set...")
+    data_source = config.RAW_DATA_DIR / config.CUR_DATA_FILE
+    logger.info('Starting the data processing pipeline for the data set {}'.format(
+        config.CUR_DATA_FILE))
+    data = utils.load_csv(data_source, logger)
+
+    #Preprocess the data:
+    print("Fetching the first few rows of un-featurized data to display...")
+    print(data.head(10))
+    data = construct_features(data)
+
+    print("Fetching the first few rows of featurized data to display...")
+    print(data.head(10))
+
+    print("Saving the raw data to the interim directory...")
+    save_location = config.PROCESSED_DATA_DIR / config.CUR_DATA_FILE
+    utils.save_csv(save_location, data, 'utf-8', False, logger)

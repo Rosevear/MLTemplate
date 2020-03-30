@@ -42,7 +42,7 @@ def save_csv(path, data, encoding, keep_indexes, logger):
         data.to_csv(path, encoding='utf-8', index=False)
     except Exception as e:
         logger.info(
-            'There was a problem saving the data set {}: {}'.format(config.CUR_RAW_DATA_FILE, str(e)))
+            'There was a problem saving the data set {}: {}'.format(path, str(e)))
 
 
 

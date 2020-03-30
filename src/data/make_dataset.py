@@ -22,7 +22,7 @@ def process_data(data):
         return data
     except Exception as e:
         logger.info(
-            'There was a problem processing the data set: {} {}'.format(config.CUR_RAW_DATA_FILE, str(e)))
+            'There was a problem processing the data set: {} {}'.format(config.CUR_DATA_FILE, str(e)))
 
 
 if __name__ == '__main__':
@@ -36,9 +36,9 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
 
     print("Loading the raw data set...")
-    data_source = config.RAW_DATA_DIR / config.CUR_RAW_DATA_FILE
+    data_source = config.INTERIM_DATA_DIR / config.CUR_DATA_FILE
     logger.info('Starting the data processing pipeline for the data set {}'.format(
-        config.CUR_RAW_DATA_FILE))
+        config.CUR_DATA_FILE))
     data = utils.load_csv(data_source, logger)
     
     #Preprocess the data:
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     print(data.head(10))
 
     print("Saving the raw data to the interim directory...")
-    save_location = config.INTERIM_DATA_DIR / config.CUR_RAW_DATA_FILE
+    save_location = config.INTERIM_DATA_DIR / config.CUR_DATA_FILE
     utils.save_csv(save_location, data, 'utf-8', False, logger)
 
 
