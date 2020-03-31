@@ -84,33 +84,38 @@ if __name__ == "__main__":
 
     gridcvs = {}
     scores = config.METRIC_LIST
-    # for score in scores:
-    #     #Perform a grid search for each algorithm, to tune the hyper-paramters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-    #     for param_grid, estimator, name in zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree')):
-    #         gcv = GridSearchCV(estimator=estimator,  
-    #                         param_grid=param_grid,
-    #                         scoring=score,
-    #                         n_jobs=1,
-    #                         cv=cv_procedure,
-    #                         verbose=1,
-    #                         refit=False)
-    #         gridcvs[name] = gcv
+    for score in scores:
+        #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
+        for param_grid, estimator, name in zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree')):
+            gcv = GridSearchCV(estimator=estimator,  
+                            param_grid=param_grid,
+                            scoring=score,
+                            n_jobs=1,
+                            cv=cv_procedure,
+                            verbose=1,
+                            refit=False,
+                            return_train_score=True)
+            gridcvs[name] = gcv
 
 
-    #         #For the result of each grid_search, print out the results on the development set
-    #         for name, gs_est in sorted(gridcvs.items()):
-    #             print("PRINT OUT RESULTS HERE")
-    #             # print("Best parameters set found on development set:")
-    #             # print()
-    #             # print(clf.best_params_)
-    #             # print()
-    #             # print("Grid scores on development set:")
-    #             # print()
-    #             # means = clf.cv_results_['mean_test_score']
-    #             # stds = clf.cv_results_['std_test_score']
-    #             # for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-    #             #     print("%0.3f (+/-%0.03f) for %r"
-    #             #         % (mean, std * 2, params))
-    #             # print()
+        #For the result of each grid_search, print out the results on the development set
+        for name, gs_est in sorted(gridcvs.items()):
+            print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
+            print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
+            
+            print("Grid scores on training set for {} classifier".format(name))
+            training_cv_means = gs_est.cv_results_['mean_train_score']
+            training_cv_stds = gs_est.cv_results_['std_train_score']
+            for mean, std, params in zip(training_cv_means, training_cv_stds, gs_est.cv_results_['params']):
+                print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
+
+            print("Grid scores on development set for : {} classifier".format(name))
+            test_cv_means = gs_est.cv_results_['mean_test_score']
+            test_cv_stds = gs_est.cv_results_['std_test_score']
+            for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
+                print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
+
+    #TODO: Estimate generalization performance with the best algorithm, features, and hyper-paramters on the held out test set
+    #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
 
 
