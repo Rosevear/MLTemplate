@@ -20,6 +20,24 @@ def construct_features(data):
         logger.info(
             'There was a problem constructing the feature vector for the provided data set: {}'.format(str(e)))
 
+def construct_features_1(data):
+    """
+     Processes the provided pandas dataframe object by:
+
+    Deleting the original METER_ID, LOCATION_NO, BILLING_CYCLE, COMMENTS, and DAYS_FROM_BILLDT columns
+    """
+
+    try:
+        del data['METER_ID']
+        del data['LOCATION_NO']
+        del data['BILLING_CYCLE']
+        del data['COMMENTS']
+        del data['DAYS_FROM_BILLDT']
+        return data
+    except Exception as e:
+        logger.info(
+        'There was a problem constructing the feature vector for the provided data set: {}'.format(str(e)))
+
 
 if __name__ == '__main__':
 
@@ -37,7 +55,7 @@ if __name__ == '__main__':
     #Construct the unencoded feature vector: breaking features out, deleting unwanted columns, adding a target label, adding features etc...
     print("Fetching the first few rows of un-featurized data to display...")
     print(data.head(10))
-    data = construct_features(data)
+    data = construct_features_1(data)
 
     print("Fetching the first few rows of featurized data to display...")
     print(data.head(10))
