@@ -1,0 +1,8 @@
+md5: cbe1259d72bda6bc9247f3ac464eb6d9
+wdir: .
+outs:
+- md5: 901dce82e27dea278cd7fa9585355047
+  path: BTUData.csv
+  cache: true
+  metric: false
+  persist: false
