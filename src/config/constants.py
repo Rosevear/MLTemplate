@@ -12,7 +12,7 @@ CUR_DATA_FILE = "BTUData.csv"
 ###############EXPERIMENT CONFIG###############
 TRAINING_SET_SIZE = 0.80
 RANDOM_SEED = 0
-K = 10  # The number of splits to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
+K = 5  # The number of splits to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 METRIC_LIST = ['accuracy']
 
 ####### LOGGING CONFIG######

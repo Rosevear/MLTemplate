@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import KFold, GridSearchCV, train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold, GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 
 #TODO: Need to add standardization to column transformer
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     
     #Initialize the classifiers
     #K-Nearest Neighbours: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier.fit
-    clf1 = KNeighborsClassifier(algorithm='ball_tree', leaf_size=50)
+    clf1 = KNeighborsClassifier(algorithm='auto', leaf_size=50)
 
     #Decision Tree: https://scikit-learn.org/stable/modules/tree.html
     clf2 = DecisionTreeClassifier(random_state=config.RANDOM_SEED)
@@ -65,40 +65,43 @@ if __name__ == "__main__":
 
     #This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
     #And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
-    #We ask the 1-hot encoder to return sparse matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
+    #We can ask the 1-hot encoder to return sparse matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
     transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
-        sparse=True), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
+        sparse=False), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
 
     #Standardization of the data: NOTE: Decision tree classifier does not require any such standardization, so we omit it here. See here for more on pipelines: https://scikit-learn.org/stable/modules/compose.html#pipeline
-    pipe1 = Pipeline([('Column Transformer', transformer),
+    pipe1 = Pipeline(steps=[('Column Transformer', transformer),
                       ('KNN Classifier', clf1)])
 
     #Setup hyper-parameters to search through for each classifier
-    param_grid1 = [{'clf1__n_neighbors': list(range(1, 10)),
-                    'clf1__p': [1, 2]}]
+    #NOTE: When using a pipeline as the estimator with GridSearchCV, the paramters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
+    param_grid1 = [{'KNN Classifier__n_neighbors': list(range(1, 10)),
+                    'KNN Classifier__p': [1, 2]}] 
     param_grid2 = [{'max_depth': list(range(1, 10)) + [None],
                     'criterion': ['gini', 'entropy']}]
 
-    #Define the k-fold cross validation model evaluation procedure. See #See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html
-    cv_procedure = KFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED) 
+    #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED) 
 
     gridcvs = {}
     scores = config.METRIC_LIST
     for score in scores:
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
         for param_grid, estimator, name in zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree')):
+            print("Tuning hyper-paramters for {} classifier".format(name))
             gcv = GridSearchCV(estimator=estimator,  
                             param_grid=param_grid,
                             scoring=score,
-                            n_jobs=1,
+                            n_jobs=-1,
                             cv=cv_procedure,
                             verbose=1,
                             refit=False,
                             return_train_score=True)
+            gcv.fit(X_train, y_train) #NOTE: although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV cross validator settings
             gridcvs[name] = gcv
 
 
-        #For the result of each grid_search, print out the results on the development set
+        #Run on the training set with all sets of paramters and print out the results
         for name, gs_est in sorted(gridcvs.items()):
             print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
             print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
@@ -115,7 +118,7 @@ if __name__ == "__main__":
             for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
                 print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
 
-    #TODO: Estimate generalization performance with the best algorithm, features, and hyper-paramters on the held out test set
+    #TODO: Estimate generalization performance with the best algorithm, features, and hyper-paramters on the held out test set (X_test and y_test)
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
 
 
