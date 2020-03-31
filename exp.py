@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import KFold, StratifiedKFold, GridSearchCV, train_test_split
+from sklearn.model_selection import StratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 
 #TODO: Need to add standardization to column transformer
@@ -81,7 +81,8 @@ if __name__ == "__main__":
                     'criterion': ['gini', 'entropy']}]
 
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED) 
+    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+    #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED) For suing cross validation with a single train test split when we want to avoid k-fold validation within gridCV for faster train/validate cycles
 
     gridcvs = {}
     scores = config.METRIC_LIST
@@ -101,7 +102,7 @@ if __name__ == "__main__":
             gridcvs[name] = gcv
 
 
-        #Run on the training set with all sets of paramters and print out the results
+        #Run on the training set with all sets of parameters and print out the results
         for name, gs_est in sorted(gridcvs.items()):
             print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
             print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
