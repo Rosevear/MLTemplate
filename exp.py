@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -56,6 +57,9 @@ if __name__ == "__main__":
     #Decision Tree: https://scikit-learn.org/stable/modules/tree.html
     clf2 = DecisionTreeClassifier(random_state=config.RANDOM_SEED)
 
+    #Logistic Regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+    clf3 = LogisticRegression(random_state=config.RANDOM_SEED)
+
     print("Setting up the column transformer for use in pipelines...")
     categorical_columns = ['LOCATION_CLASS','YEAR', 'MONTH', 'DAY', 'DOW', 'PREVYEAR', 'PREVMONTH', 'PREVDAY', 'PREVDOW', 'PREVPREVYEAR', 'PREVPREVMONTH', 'PREVPREVDAY', 'PREVPREVDOW', 'UOM', 'PREV_STATUS', 'PREV_STATUS2']
     numerical_columns = ['READ_VALUE', 'PREV_READ', 'PREV_READ2']
@@ -69,18 +73,23 @@ if __name__ == "__main__":
     DT_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
         sparse=True), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
 
+    LOG_REG_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=True), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
+
     #Display some of the data as a sanity check that it is in the desired format
     data_sample = data[:1]
     data_sample = KNN_transformer.fit_transform(data_sample)
     print("Displaying the first few rows of data transformed by the KNN column transformer...")
     print(data_sample[0:10, :])
 
-    #Standardization of the data: NOTE: Decision tree classifier does not require any such standardization, so we omit it here. See here for more on pipelines: https://scikit-learn.org/stable/modules/compose.html#pipeline
     pipe1 = Pipeline(steps = [('Column Transformer', KNN_transformer),
                       ('KNN_Classifier', clf1)])
 
-    pipe2 = Pipeline(steps = [('1-Hot Encoder', DT_transformer),
+    pipe2 = Pipeline(steps=[('Column Transformer', DT_transformer),
                             ('Decision_Tree_Classifier', clf2)])
+
+    pipe3 = Pipeline(steps=[('Column Transformer', LOG_REG_transformer),
+                            ('Logit_Classifier', clf3)])
 
     #Setup hyper-parameters to search through for each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
@@ -88,6 +97,9 @@ if __name__ == "__main__":
                     'KNN_Classifier__p': [2]}] 
     param_grid2 = [{'Decision_Tree_Classifier__max_depth': list(range(5, 6)),
                     'Decision_Tree_Classifier__criterion': ['gini']}]
+
+    param_grid3 = [{'Logit_Classifier__penalty': ['l2'],
+                    'Logit_Classifier__C': np.power(10., np.arange(1))}]
 
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
     cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
@@ -100,9 +112,8 @@ if __name__ == "__main__":
     for score in scores:
         print("Optimizing classifiers for {} ".format(score))
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-        #algorithm_param_combinations = zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree'))
-        algorithm_param_combinations = [(param_grid2, pipe2, 'DTree')]
-        print(algorithm_param_combinations)
+        algorithm_param_combinations = zip((param_grid1, param_grid2, param_grid3), (pipe1, pipe2, pipe3), ('KNN', 'DTree', 'Logit'))
+        #algorithm_param_combinations = [(param_grid3, pipe3, 'Logit')]
         for param_grid, estimator, name in algorithm_param_combinations:
             print("Tuning hyper-paramters for {} classifier".format(name))
             gcv = GridSearchCV(estimator=estimator,  
