@@ -16,23 +16,6 @@ from sklearn.model_selection import StratifiedKFold, ShuffleSplit, GridSearchCV,
 from sklearn.pipeline import Pipeline
 
 
-def get_column_transformer(data, categorical_columns, numerical_columns, logger):
-    """
-    Encodes data for use in machine learning algorithms by: transforming categorical variables to 1-hot vectors
-    NOTE: Data is assumed to be a numpy array or pandas dataframe
-    """
-    try:
-        #This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
-        #And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
-        #We can ask the 1-hot encoder to return sparse matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
-        transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
-            sparse=False), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
-        
-        return transformer
-    except Exception as e:
-        logger.info(
-            'There was a problem encoding the feature vector for the provided data set: {}'.format(str(e)))
-
 if __name__ == "__main__":
 
     print("Starting the experiment...")
@@ -76,32 +59,40 @@ if __name__ == "__main__":
     print("Setting up the column transformer for use in pipelines...")
     categorical_columns = ['LOCATION_CLASS','YEAR', 'MONTH', 'DAY', 'DOW', 'PREVYEAR', 'PREVMONTH', 'PREVDAY', 'PREVDOW', 'PREVPREVYEAR', 'PREVPREVMONTH', 'PREVPREVDAY', 'PREVPREVDOW', 'UOM', 'PREV_STATUS', 'PREV_STATUS2']
     numerical_columns = ['READ_VALUE', 'PREV_READ', 'PREV_READ2']
-    transformer = get_column_transformer(data, categorical_columns, numerical_columns, logger)
+    
+    #This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
+    #And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+    #We can ask the 1-hot encoder to return sparse matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
+    KNN_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=False), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
+
+    DT_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=True), categorical_columns), ('Standardization For Interval Data', StandardScaler(), numerical_columns)],  remainder='passthrough')
 
     #Display some of the data as a sanity check that it is in the desired format
     data_sample = data[:1]
-    data_sample = transformer.fit_transform(data_sample)
-    print("Displaying the first few rows of data transformed by the column transformer...")
+    data_sample = KNN_transformer.fit_transform(data_sample)
+    print("Displaying the first few rows of data transformed by the KNN column transformer...")
     print(data_sample[0:10, :])
 
     #Standardization of the data: NOTE: Decision tree classifier does not require any such standardization, so we omit it here. See here for more on pipelines: https://scikit-learn.org/stable/modules/compose.html#pipeline
-    pipe1 = Pipeline(steps=[('Column Transformer', transformer),
+    pipe1 = Pipeline(steps = [('Column Transformer', KNN_transformer),
                       ('KNN_Classifier', clf1)])
 
-    pipe2 = Pipeline(steps = [('1-Hot Encoder', OneHotEncoder(sparse=False)),
+    pipe2 = Pipeline(steps = [('1-Hot Encoder', DT_transformer),
                             ('Decision_Tree_Classifier', clf2)])
 
     #Setup hyper-parameters to search through for each classifier
-    #NOTE: When using a pipeline as the estimator with GridSearchCV, the paramters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
+    #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     param_grid1 = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
                     'KNN_Classifier__p': [2]}] 
-    param_grid2 = [{'Decision_Tree_Classifier__max_depth': list(range(5, 6)) + [None],
-                    'Decision_Tree_Classifier__criterion': ['gini', 'entropy']}]
+    param_grid2 = [{'Decision_Tree_Classifier__max_depth': list(range(5, 6)),
+                    'Decision_Tree_Classifier__criterion': ['gini']}]
 
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
     cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
     
-    #NOTE: For suing cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster train/validate cycles See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
+    #NOTE: For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster train/validate cycles See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
     #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED) 
 
     gridcvs = {}
@@ -109,7 +100,10 @@ if __name__ == "__main__":
     for score in scores:
         print("Optimizing classifiers for {} ".format(score))
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-        for param_grid, estimator, name in zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree')):
+        #algorithm_param_combinations = zip((param_grid1, param_grid2), (pipe1, clf2), ('KNN', 'DTree'))
+        algorithm_param_combinations = [(param_grid2, pipe2, 'DTree')]
+        print(algorithm_param_combinations)
+        for param_grid, estimator, name in algorithm_param_combinations:
             print("Tuning hyper-paramters for {} classifier".format(name))
             gcv = GridSearchCV(estimator=estimator,  
                             param_grid=param_grid,
@@ -119,7 +113,7 @@ if __name__ == "__main__":
                             verbose=1,
                             refit=False,
                             return_train_score=True)
-            gcv.fit(X_train, y_train) #NOTE: although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV cross validator settings
+            gcv.fit(X_train, y_train) #NOTE: although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV according to the cv argument
             gridcvs[name] = gcv
 
 
