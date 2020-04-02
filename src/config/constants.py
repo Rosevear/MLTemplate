@@ -12,11 +12,19 @@ CUR_DATA_FILE = "BTUData.csv"
 ###############EXPERIMENT CONFIG###############
 TRAINING_SET_SIZE = 0.80
 RANDOM_SEED = 0
-K = 5  # The number of splits to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
-METRIC_LIST = ['accuracy']
+K = 10  # The number of splits to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
+METRIC_LIST = ['precision']
+TUNE_HYPER_PARAMETERS = False
+PLOT_LEARNING_CURVES = True
+PLOT_VALIDATION_CURVES = True
 
 ####### LOGGING CONFIG######
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_LEVEL = logging.INFO
 LOGFILE = ROOT_DIR / "logs" / "data.log"
+
+#######DATA ########
+CATEGORICAL_COLUMNS = ['LOCATION_CLASS', 'YEAR', 'MONTH', 'DAY', 'DOW', 'PREVYEAR', 'PREVMONTH', 'PREVDAY',
+                       'PREVDOW', 'PREVPREVYEAR', 'PREVPREVMONTH', 'PREVPREVDAY', 'PREVPREVDOW', 'UOM', 'PREV_STATUS', 'PREV_STATUS2']
+NUMERICAL_COLUMNS = ['READ_VALUE', 'PREV_READ', 'PREV_READ2']
 
