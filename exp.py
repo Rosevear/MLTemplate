@@ -7,7 +7,7 @@ import mlflow.sklearn
 import mlflow
 import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -16,11 +16,13 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
+from graphviz import Source
+from datetime import datetime
 
 
 if __name__ == "__main__":
 
-    print("Starting the experiment...")
+    print("Starting the experiment at {}".format(datetime.now()))
 
     #Load environment variables
     dotenv.load_dotenv(dotenv.find_dotenv())
@@ -106,14 +108,15 @@ if __name__ == "__main__":
     param_grid1 = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
                     'KNN_Classifier__p': [2]}] 
     
-    param_grid2 = [{'Decision_Tree_Classifier__max_depth': list(range(5, 6)),
+    param_grid2 = [{'Decision_Tree_Classifier__max_depth': list(range(1, 11)) + [None],
                     'Decision_Tree_Classifier__criterion': ['gini']}]
 
     param_grid3 = [{'Logit_Classifier__penalty': ['l2'],
                     'Logit_Classifier__C': np.power(10., np.arange(1))}]
 
-    algorithm_param_combinations = zip((param_grid1, param_grid2, param_grid3), (pipe1, pipe2, pipe3), ('KNN', 'DTree', 'Logit'))
+    #algorithm_param_combinations = zip((param_grid1, param_grid2, param_grid3), (pipe1, pipe2, pipe3), ('KNN', 'DTree', 'Logit'))
     #algorithm_param_combinations = [(param_grid3, pipe3, 'Logit')]
+    algorithm_param_combinations = [(param_grid2, pipe2, 'DTree')]
 
     for score in config.METRIC_LIST:
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
@@ -123,7 +126,7 @@ if __name__ == "__main__":
 
             #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
             #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-            cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=10, random_state=config.RANDOM_SEED)
+            cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
             #NOTE: For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster (but less statistically reliable for small datasets) single split train/validate cycles. See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
             #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
@@ -141,7 +144,7 @@ if __name__ == "__main__":
                                 n_jobs=-1,
                                 cv=cv_procedure,
                                 verbose=1,
-                                refit=False,
+                                refit=True,
                                 return_train_score=True)
                 gcv.fit(X_train, y_train) #NOTE: Although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV according to the cv argument
                 gridcvs[name] = gcv
@@ -150,11 +153,14 @@ if __name__ == "__main__":
             #Get the results
             for name, gs_est in sorted(gridcvs.items()):
 
-                if name == "DTree":
-                    plot_tree(gs_est)
-
                 print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
                 print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
+
+                if name == "DTree":
+                    tree_estimator = gs_est.best_estimator_.named_steps['Decision_Tree_Classifier']
+                    graph_data = export_graphviz(tree_estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
+                    graph = Source(graph_data, format="png")
+                    graph.render("./reports/figures/DTPlot")
                 
                 print("Grid scores on training set for {} classifier".format(name))
                 training_cv_means = gs_est.cv_results_['mean_train_score']
