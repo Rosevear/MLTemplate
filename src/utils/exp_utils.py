@@ -130,7 +130,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     if ylim is not None:
         axes[0].set_ylim(*ylim)
     axes[0].set_xlabel("Training examples")
-    axes[0].set_ylabel("Score")
+    axes[0].set_ylabel("Score: {}".format(scoring))
 
 
     train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
@@ -171,12 +171,12 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
                          test_scores_mean + test_scores_std, alpha=0.1)
     axes[2].set_xlabel("fit_times")
-    axes[2].set_ylabel("Score")
+    axes[2].set_ylabel("Score: {}".format(scoring))
     axes[2].set_title("Performance of the model")
 
     return plt
 
-def plot_validation_curve(estimator, X, y, param_name, param_range, scoring, cv, n_jobs, verbose):
+def plot_validation_curve(estimator, X, y, param_name, param_range, scoring, cv, n_jobs, verbose, title):
     """
     """
 
@@ -188,9 +188,9 @@ def plot_validation_curve(estimator, X, y, param_name, param_range, scoring, cv,
     test_scores_mean = np.mean(test_scores, axis=1)
     test_scores_std = np.std(test_scores, axis=1)
 
-    plt.title("Validation Curve with KNN")
-    plt.xlabel(r"k-neighbours")
-    plt.ylabel("Score")
+    plt.title(title)
+    plt.xlabel(param_name)
+    plt.ylabel("Score: {}".format(scoring))
     plt.ylim(0.0, 1.1)
     lw = 2
     plt.plot(param_range, train_scores_mean, label="Training score",

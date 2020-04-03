@@ -14,10 +14,11 @@ TRAINING_SET_SIZE = 0.80
 RANDOM_SEED = 0
 K = 10  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 REPEATS = 10  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
-METRIC_LIST = ['precision']
+METRIC_LIST = ['accuracy']
 TUNE_HYPER_PARAMETERS = True
-PLOT_LEARNING_CURVES = False
-PLOT_VALIDATION_CURVES = False
+PLOT_LEARNING_CURVES = True
+PLOT_VALIDATION_CURVES = True
+RETURN_TRAIN_SCORES = True
 
 ####### LOGGING CONFIG######
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

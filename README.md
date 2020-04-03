@@ -205,6 +205,10 @@ To install the packages run the setup.py script in the root directory (where it 
 
 Run the following: python setup.py develop
 
+
+####Licenses###
+sklearn: https://github.com/scikit-learn/scikit-learn/blob/master/COPYING
+
 Project Organization
 ------------
 
