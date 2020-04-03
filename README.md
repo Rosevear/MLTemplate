@@ -53,9 +53,9 @@ python -c "import tensorflow as tf; print(tf.__version__)"
 Anaconda Cloud also has a gpu-specific installation of tensorflow that will download and manage the necessary GPU API's (e.g. CUDA) as well. 
 See the following for more information on the relationship between CPU and GPU packages within the Conda ecosystem: https://docs.anaconda.com/anaconda/user-guide/tasks/tensorflow/ and https://www.anaconda.com/tensorflow-in-anaconda/
 
-NOTE: GPE enabled tensorflow requires that the relevant CUDA and CUDAnn libraries are also installed, along with an NVIDIA driver for your GPU. The Conda package manager will handle the former software requirements but not the latter.
+NOTE: GPU enabled tensorflow requires that the relevant CUDA and CUDAnn libraries are also installed, along with an NVIDIA driver for your GPU. The Conda package manager will handle the former software requirements but not the latter.
 
-Finally, intended GPU itself must be CUDA enabled. See here for a list of CUDA enabled Nvidia products: https://developer.nvidia.com/cuda-gpus
+Finally, the intended GPU itself must be CUDA enabled. See here for a list of CUDA enabled Nvidia products: https://developer.nvidia.com/cuda-gpus
 
 See here https://www.tensorflow.org/install/gpu for installation instructions and requirements for dpu enabled tensorflow
 
