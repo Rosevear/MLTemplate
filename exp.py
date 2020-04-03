@@ -184,6 +184,18 @@ if __name__ == "__main__":
                     graph_data = export_graphviz(tree_estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot")
+
+                #Find out what neighbours are being used to classify a random selection of training examples
+                if name == "KNN":
+                    knn_estimator = get_KNN_classifier_pipeline()
+                    knn_estimator.set_params(KNN_Classifier__n_neighbors=5)
+                    training_indices_sample = np.random.randint(0, X_train.shape[0], 10)
+                    print("Get the nearest neighbours of a random sample of training points...")
+                    #Since refit is true the nearest neighbors gridCV instance should be fit on all of the training data
+                    #TODO: Use the random indices to index into the training data to get the points whose neighbors we want
+                    #TODO: Pass that into get neighbors to get the relevant neighbors
+                    #TODO: Transform the representation of the points and their neighbors back into their original format for easy viewing
+
                 
                 if config.RETURN_TRAIN_SCORES:
                     print("Grid scores on training set for {} classifier".format(name))
