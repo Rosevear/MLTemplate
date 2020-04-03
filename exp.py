@@ -111,12 +111,13 @@ if __name__ == "__main__":
     target_series = pd.Series(y_train)
     print('training set target counts \n {}'.format(target_series.value_counts()))
 
-
     #Display some of the data as a sanity check that it is in the desired format
-    # data_sample = data[0:3]
-    # data_sample = KNN_transformer.fit_transform(data_sample)
-    # print("Displaying the first few rows of data transformed by the KNN column transformer...")
-    # print(data_sample[0:3, :])
+    if config.VERBOSITY >= 2:
+        KNN_transformer = get_KNN_classifier_pipeline().named_steps['Column Transformer']
+        data_sample = data[0:3]
+        data_sample = KNN_transformer.fit_transform(data_sample)
+        print("Displaying the first few rows of data transformed by the KNN column transformer...")
+        print(data_sample[0:3, :])
 
 
     #Setup classifier pipelines and hyper-parameters to search through for each classifier
@@ -151,9 +152,10 @@ if __name__ == "__main__":
             #NOTE: For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster (but less statistically reliable for small datasets) single split train/validate cycles. See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
             #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
 
-            # print("Indices used for k fold cross validation")
-            # for train_index, test_index in cv_procedure.split(X_train, y_train):
-            #     print("TRAIN:", train_index, "TEST:", test_index)
+            if config.VERBOSITY >= 2:
+                print("Indices used for k fold cross validation")
+                for train_index, test_index in cv_procedure.split(X_train, y_train):
+                    print("TRAIN:", train_index, "TEST:", test_index)
 
 
             for param_grid, estimator, name in algorithm_param_combinations:

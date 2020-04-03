@@ -1,5 +1,3 @@
-import os
-import dotenv
 import pandas as pd
 import config
 import utils
@@ -30,10 +28,24 @@ if __name__ == '__main__':
                                                         shuffle=True,
                                                         stratify=targets)
 
-    #Visualize the distribution of each feature
-    for cat_feature in config.CATEGORICAL_COLUMNS:
-        data[cat_feature].value_counts().plot(kind='bar', title=cat_feature, subplots=True)
+    #Visualize the distribution of each feature #NOTE: See the Returns ection of the docs for how the number of rows column in the grid impacts the plt.sublots return value data type https://matplotlib.org/3.2.1/api/_as_gen/matplotlib.pyplot.subplots.html
+    print('Plotting bar charts for the distribution of categorical features...')
+    fig, axs = plt.subplots(4, 4)
+    i = 0
+    for row in range(0, 4):
+        for column in range(0, 4):
+            cat_feature = config.CATEGORICAL_COLUMNS[i]
+            data[cat_feature].value_counts().plot(kind='bar', title=cat_feature, ax=axs[row][column])
+            i += 1
 
-    #data.plot.bar(kind='bar')
+    print('Plotting bar charts for the distribution of binary features...')
+    fig, axs = plt.subplots(1, 4)
+    for i in range(0, 4):
+        cat_feature = config.BINARY_COLUMNS[i]
+        data[cat_feature].value_counts().plot(
+            kind='bar', title=cat_feature, ax=axs[i])
+
+    print("Plotting histograms for the distribution of numerical features..")
     data.hist(column=config.NUMERICAL_COLUMNS)
     plt.show()
+
