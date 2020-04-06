@@ -105,7 +105,8 @@ if __name__ == "__main__":
     print("X_test data dimensions (row, column): {}".format(X_test.shape))
     print("y_train data dimensions (row, column): {}".format(y_train.shape))
     print("y_test data dimensions (row, column): {}".format(y_test.shape))
-
+    num_samples = X_train.shape[0]
+    num_features = X_train.shape[1]
 
     #Check that the accepted and rejected training targets are roughly equally balanced
     target_series = pd.Series(y_train)
@@ -123,11 +124,11 @@ if __name__ == "__main__":
     #Setup classifier pipelines and hyper-parameters to search through for each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     KNN_pipeline = get_KNN_classifier_pipeline()
-    KNN_paramS = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
+    KNN_params = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
                     'KNN_Classifier__p': [2]}] 
     
     DT_pipeline = get_DT_classifier_pipeline()
-    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 11)) + [None],
+    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 2)),
                     'Decision_Tree_Classifier__criterion': ['gini']}]
 
     LOGIT_pipeline = get_Logit_classifier_pipeline
@@ -135,22 +136,81 @@ if __name__ == "__main__":
                     'Logit_Classifier__C': np.power(10., np.arange(1))}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
-    #algorithm_param_combinations = zip((KNN_paramS, DT_params, LOGIT_params), (KNN_pipeline, DT_pipeline, LOGIT_pipeline), ('KNN', 'DTree', 'Logit'))
+    #algorithm_param_combinations = zip((KNN_params, DT_params, LOGIT_params), (KNN_pipeline, DT_pipeline, LOGIT_pipeline), ('KNN', 'DTree', 'Logit'))
     #algorithm_param_combinations = [(LOGIT_params, LOGIT_pipeline, 'Logit')]
-    algorithm_param_combinations = [(DT_params, DT_pipeline, 'DTree')]
+    #algorithm_param_combinations = [(DT_params, DT_pipeline, 'DTree')]
+    algorithm_param_combinations = [(KNN_params, KNN_pipeline, 'KNN')]
+
+    #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+    
+    #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
+    #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+
+    #For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster (but less statistically reliable for small datasets) single split train/validate cycles. See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
+    #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
+    
+    if config.ANALYZE_LEARNING:
+        for score in config.METRIC_LIST:
+            for _, estimator, name in algorithm_param_combinations:
+                if name == 'DTree':
+                    estimator = get_DT_classifier_pipeline()
+                    estimator.set_params(Decision_Tree_Classifier__max_depth=5)
+                    estimator.fit(X_train, y_train)
+                    
+                    graph_data = export_graphviz(estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
+                    graph = Source(graph_data, format="png")
+                    graph.render("./reports/figures/DTPlot-{}".format(score))
+                
+                if name == 'KNN':
+                    estimator = get_KNN_classifier_pipeline()
+                    estimator.set_params(KNN_Classifier__n_neighbors=5)
+                    estimator.fit(X_train, y_train)
+
+                    #Extract the steps from the pipeline
+                    knn_classifier = estimator.named_steps['KNN_Classifier']
+                    knn_transformer = estimator.named_steps['Column Transformer']
+
+
+                    #Index into the training set to retrieve a random sample of neighbours
+                    sample_training_data_indices = np.random.randint(
+                        0, num_samples, 10)
+                    sample_training_data = X_train.to_numpy(
+                    )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
+
+                    print('training samples untrandfordmed')
+                    print(sample_training_data.shape)
+
+                    #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
+                    sample_training_data = pd.DataFrame(
+                        sample_training_data, columns=X_train.columns)
+
+                    #Transform the sample data via the pipeline to encode it properly for use by the algorithm
+                    transformed_sample_data = knn_transformer .transform(
+                        sample_training_data)
+
+                    #Get the neighbors of the queried points
+                    sample_training_data_neighbors = knn_classifier.kneighbors(
+                        transformed_sample_data)
+
+                    #Reverse the encoding of data or easy inspection
+                    original_training_data = knn_transformer.inverse_transform(
+                        sample_training_data)
+                    print("Training data sample...")
+                    print(original_training_data)
+
+                    #Reverse the encoding of neighbors to compare to their respective query points
+                    neighbors_original_form = estimator.inverse_transform(
+                        sample_training_data_neighbors)
+                    print("Neighbors of training data samples...")
+                    print(neighbors_original_form)
+        
 
     #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
     if config.TUNE_HYPER_PARAMETERS:
         for score in config.METRIC_LIST:
             print("Optimizing classifiers for {} ".format(score))
             gridcvs = {}
-
-            #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-            #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-            cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
-
-            #NOTE: For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster (but less statistically reliable for small datasets) single split train/validate cycles. See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
-            #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
 
             if config.VERBOSITY >= 2:
                 print("Indices used for k fold cross validation")
@@ -177,45 +237,23 @@ if __name__ == "__main__":
 
                 print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
                 print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
-
-                #If we are using a decision tree we can create a graph of the tree to visualize how it makes decisions
-                if name == "DTree":
-                    tree_estimator = gs_est.best_estimator_.named_steps['Decision_Tree_Classifier']
-                    graph_data = export_graphviz(tree_estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
-                    graph = Source(graph_data, format="png")
-                    graph.render("./reports/figures/DTPlot")
-
-                #Find out what neighbours are being used to classify a random selection of training examples
-                if name == "KNN":
-                    knn_estimator = get_KNN_classifier_pipeline()
-                    knn_estimator.set_params(KNN_Classifier__n_neighbors=5)
-                    training_indices_sample = np.random.randint(0, X_train.shape[0], 10)
-                    print("Get the nearest neighbours of a random sample of training points...")
-                    #Since refit is true the nearest neighbors gridCV instance should be fit on all of the training data
-                    #TODO: Use the random indices to index into the training data to get the points whose neighbors we want
-                    #TODO: Pass that into get neighbors to get the relevant neighbors
-                    #TODO: Transform the representation of the points and their neighbors back into their original format for easy viewing
-
                 
                 if config.RETURN_TRAIN_SCORES:
-                    print("Grid scores on training set for {} classifier".format(name))
+                    print("Grid scores on training set for classifier: {} ".format(name))
                     training_cv_means = gs_est.cv_results_['mean_train_score']
                     training_cv_stds = gs_est.cv_results_['std_train_score']
                     for mean, std, params in zip(training_cv_means, training_cv_stds, gs_est.cv_results_['params']):
                         print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
 
-                print("Grid scores on development set for : {} classifier".format(name))
+                print("Grid scores on development set for classifier: {}".format(name))
                 test_cv_means = gs_est.cv_results_['mean_test_score']
                 test_cv_stds = gs_est.cv_results_['std_test_score']
                 for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
                     print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
                 print("Finished the hyper-parameter tuning!\n")
         
-
-
-    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-
-    #Plotstraining and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+    
+    #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
     if config.PLOT_LEARNING_CURVES:
         print('Training classifier for the learning curve...')
         cur_pipe = get_DT_classifier_pipeline()
@@ -229,8 +267,7 @@ if __name__ == "__main__":
         print("Training classifier for the validation curve...")
         param_name = 'Decision_Tree_Classifier__max_depth'
         param_range = np.array(list(range(1, 51)))
-        validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title="DT Validation Curve", X=X_train, y=y_train,
-                                                        param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+        validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title="DT Validation Curve", X=X_train, y=y_train, param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
         validation_plot.show()
 
     
