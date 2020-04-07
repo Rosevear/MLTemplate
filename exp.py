@@ -9,11 +9,11 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve
+from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_score, cross_val_predict
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 from graphviz import Source
@@ -22,9 +22,8 @@ from datetime import datetime
 
 def get_KNN_classifier_pipeline():
     """
-    """
-
     #K-Nearest Neighbours: https://scikit-learn.org/stable/modules/neighbors.html#id6
+    """
     clf = KNeighborsClassifier(algorithm='auto', leaf_size=50)
 
     #This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
@@ -40,9 +39,9 @@ def get_KNN_classifier_pipeline():
 
 def get_DT_classifier_pipeline():
     """
+     https://scikit-learn.org/stable/modules/tree.html
     """
 
-    #Decision Tree: https://scikit-learn.org/stable/modules/tree.html
     clf = DecisionTreeClassifier(random_state=config.RANDOM_SEED)
 
     DT_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
@@ -53,21 +52,36 @@ def get_DT_classifier_pipeline():
 
     return DT_pipeline
 
-def get_Logit_classifier_pipeline():
+def get_logit_classifier_pipeline():
     """
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     """
 
-    #Logistic Regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     clf = LogisticRegression(
         random_state=config.RANDOM_SEED, solver='liblinear')
 
-    LOGIT_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+    logit_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
-    logit_classifier_pipeline = Pipeline(steps=[('Column Transformer', LOGIT_transformer),
-                            ('Logit_Classifier', clf)])
+    logit_classifier_pipeline = Pipeline(steps=[('Column Transformer', logit_transformer),
+                            ('logit_Classifier', clf)])
 
     return logit_classifier_pipeline
+
+def get_perceptron_classifier_pipeline():
+    """
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html#sklearn.linear_model.Perceptron
+    """
+
+    clf = Perceptron(random_state=config.RANDOM_SEED)
+
+    perceptron_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
+
+    perceptron_classifier_pipeline = Pipeline(steps=[('Column Transformer', perceptron_transformer),
+                                                ('perceptron_Classifier', clf)])
+
+    return perceptron_classifier_pipeline
 
 if __name__ == "__main__":
 
@@ -108,9 +122,16 @@ if __name__ == "__main__":
     num_samples = X_train.shape[0]
     num_features = X_train.shape[1]
 
+
     #Check that the accepted and rejected training targets are roughly equally balanced
     target_series = pd.Series(y_train)
     print('training set target counts \n {}'.format(target_series.value_counts()))
+    if config.SHUFFLE_TARGETS:
+        print("first 10 training rows of targets...")
+        print(y_train[0:10])
+        y_train = shuffle(y_train)
+        print("first 10 rows of targets shuffled...")
+        print(y_train[0:10])
 
     #Display some of the data as a sanity check that it is in the desired format
     if config.VERBOSITY >= 2:
@@ -121,7 +142,7 @@ if __name__ == "__main__":
         print(data_sample[0:3, :])
 
 
-    #Setup classifier pipelines and hyper-parameters to search through for each classifier
+    #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     KNN_pipeline = get_KNN_classifier_pipeline()
     KNN_params = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
@@ -131,39 +152,49 @@ if __name__ == "__main__":
     DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 2)),
                     'Decision_Tree_Classifier__criterion': ['gini']}]
 
-    LOGIT_pipeline = get_Logit_classifier_pipeline
-    LOGIT_params = [{'Logit_Classifier__penalty': ['l2'],
-                    'Logit_Classifier__C': np.power(10., np.arange(1))}]
+    logit_pipeline = get_logit_classifier_pipeline()
+    logit_params = [{'logit_Classifier__penalty': ['l2'],
+                    'logit_Classifier__C': np.power(10., np.arange(1))}]
+
+    perceptron_pipeline = get_perceptron_classifier_pipeline()
+    perceptron_params = [{'perceptron_classifier__': 'l1',
+                          'perceptron_classifier__alpha': 0.0001,
+                          'perceptron_classifier__fit_intercept': True,
+                          'perceptron_classifier__max_iter': 1000,
+                          'perceptron_classifier__tol': 1e-3,
+                          'perceptron_classifier__eta0': 1,
+                          'perceptron_classifier__early_stopping': True,
+                          'perceptron_classifier__validation_fraction': 0.1,
+                          'perceptron_classifier__n_iter_no_change': 5}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
-    #algorithm_param_combinations = zip((KNN_params, DT_params, LOGIT_params), (KNN_pipeline, DT_pipeline, LOGIT_pipeline), ('KNN', 'DTree', 'Logit'))
-    #algorithm_param_combinations = [(LOGIT_params, LOGIT_pipeline, 'Logit')]
-    #algorithm_param_combinations = [(DT_params, DT_pipeline, 'DTree')]
-    algorithm_param_combinations = [(KNN_params, KNN_pipeline, 'KNN')]
+    #algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
+    #algorithm_param_combinations = [(logit_params, logit_pipeline, 'logit')]
+    algorithm_param_combinations = [(DT_params, DT_pipeline, 'DTree')]
+    #algorithm_param_combinations = [(KNN_params, KNN_pipeline, 'KNN')]
+    #algorithm_param_combinations = [(perceptron_params, perceptron_pipeline, 'perceptron')]
 
+    #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
     cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
     
     #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
     #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
-    #For using cross validation with a single train test split when we want to avoid k-fold validation within gridSearchCV for faster (but less statistically reliable for small datasets) single split train/validate cycles. See https://stackoverflow.com/questions/29503689/how-to-run-gridsearchcv-without-cross-validation
-    #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
-    
-    if config.ANALYZE_LEARNING:
-        for score in config.METRIC_LIST:
+    for score in config.METRIC_LIST:
+        if config.ANALYZE_LEARNING:
             for _, estimator, name in algorithm_param_combinations:
                 if name == 'DTree':
-                    estimator = get_DT_classifier_pipeline()
-                    estimator.set_params(Decision_Tree_Classifier__max_depth=5)
-                    estimator.fit(X_train, y_train)
+                    
+                    #TODO: The estimator here does not want to fit for some reason. Getting error: AttributeError: 'DecisionTreeClassifier' object has no attribute 'transform'
+                    estimator.set_params(
+                        Decision_Tree_Classifier__max_depth=50).fit(X_train, y_train)
                     
                     graph_data = export_graphviz(estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
                 if name == 'KNN':
-                    estimator = get_KNN_classifier_pipeline()
                     estimator.set_params(KNN_Classifier__n_neighbors=5)
                     estimator.fit(X_train, y_train)
 
@@ -178,9 +209,6 @@ if __name__ == "__main__":
                     sample_training_data = X_train.to_numpy(
                     )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
 
-                    print('training samples untrandfordmed')
-                    print(sample_training_data.shape)
-
                     #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
                     sample_training_data = pd.DataFrame(
                         sample_training_data, columns=X_train.columns)
@@ -193,6 +221,7 @@ if __name__ == "__main__":
                     sample_training_data_neighbors = knn_classifier.kneighbors(
                         transformed_sample_data)
 
+                    #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
                     #Reverse the encoding of data or easy inspection
                     original_training_data = knn_transformer.inverse_transform(
                         sample_training_data)
@@ -204,11 +233,9 @@ if __name__ == "__main__":
                         sample_training_data_neighbors)
                     print("Neighbors of training data samples...")
                     print(neighbors_original_form)
-        
-
-    #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-    if config.TUNE_HYPER_PARAMETERS:
-        for score in config.METRIC_LIST:
+            
+        #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
+        if config.TUNE_HYPER_PARAMETERS:
             print("Optimizing classifiers for {} ".format(score))
             gridcvs = {}
 
@@ -235,6 +262,15 @@ if __name__ == "__main__":
             #Get and print the results
             for name, gs_est in sorted(gridcvs.items()):
 
+                #TODO: Remove this once we have the ANALYZE_learning wokring correctly
+                #If we are using a decision tree we can create a graph of the tree to visualize how it makes decisions
+                if name == "DTree":
+                    tree_estimator = gs_est.best_estimator_.named_steps['Decision_Tree_Classifier']
+                    graph_data = export_graphviz(tree_estimator, class_names=[str(
+                        class_val) for class_val in targets.unique()], filled=True, rounded=True)
+                    graph = Source(graph_data, format="png")
+                    graph.render("./reports/figures/DTPlot-{}".format(score))
+
                 print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
                 print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
                 
@@ -251,27 +287,53 @@ if __name__ == "__main__":
                 for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
                     print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
                 print("Finished the hyper-parameter tuning!\n")
+            
         
-    
-    #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
-    if config.PLOT_LEARNING_CURVES:
-        print('Training classifier for the learning curve...')
         cur_pipe = get_DT_classifier_pipeline()
         cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
-        train_sizes = np.arange(0.10, 1.10, 0.10)
-        learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title="DT learning curves", X=X_train, y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
-        learning_plot.show()
+        learning_curve_title = "DT learning curves"
+        validation_curve_title = "DT Validation Curve"
+        #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+        if config.PLOT_LEARNING_CURVES:
+            print('Training classifier for the learning curve...')
+            train_sizes = np.arange(0.10, 1.10, 0.10)
+            learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train, y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+            learning_plot.show()
 
-    #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
-    if config.PLOT_VALIDATION_CURVES:
-        print("Training classifier for the validation curve...")
-        param_name = 'Decision_Tree_Classifier__max_depth'
-        param_range = np.array(list(range(1, 51)))
-        validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title="DT Validation Curve", X=X_train, y=y_train, param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
-        validation_plot.show()
+        #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
+        if config.PLOT_VALIDATION_CURVES:
+            print("Training classifier for the validation curve...")
+            param_name = 'Decision_Tree_Classifier__max_depth'
+            param_range = np.array(list(range(1, 51)))
+            validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train, param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+            validation_plot.show()
 
-    
-    #TODO: Estimate generalization performance with the best algorithm, features, and hyper-parameters on the held out test set (X_test and y_test)
+    #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
+    #NOTE: This is a confusion matrix based on the predicted values generated during cross validation. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
+    if config.COMPUTE_CONFUSION_MATRIX:
+        predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=1)
+        tn, fp, fn, tp = confusion_matrix(y_true=y_train, y_pred=predictions).ravel()
+        print("Confusion matrix results...")
+        print("True Positive Rate: {}".format(tp))
+        print("False Positive Rate: {}".format(fp))
+        print("True Negative Rate: {}".format(tn))
+        print("False Negative Rate: {}".format(fn))
+
+        print("Plotting the confusion matrix...")
+        plot = plot_confusion_matrix(estimator=cur_pipe, X=X_train, y_true=y_train, normalize=True)
+        plt.show()
+
+        
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
+    cur_pipe = get_DT_classifier_pipeline()
+    if config.EVALUATE_TEST_SET:
+        #For using cross validation with a single train test split when we want to avoid k-fold validation within
+        #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
+        cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
+        
+        print("Training and testing the generalization score for accuracy...")
+        cur_pipe.fit(X_train, y_train)
+        final_score = cur_pipe.score(X_test, y_test)
+        print("Mean Generalization score: {} ".format(final_score))
 
 
