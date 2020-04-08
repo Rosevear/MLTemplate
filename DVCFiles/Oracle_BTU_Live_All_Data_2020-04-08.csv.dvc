@@ -1,0 +1,8 @@
+md5: 7a3b404202a1ab1c950e37b04bc190ce
+wdir: .
+outs:
+- md5: 74b0dc174c42810c7797f5b404a9a533
+  path: Oracle_BTU_Live_All_Data_2020-04-08.csv
+  cache: true
+  metric: false
+  persist: false
