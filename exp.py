@@ -141,7 +141,7 @@ if __name__ == "__main__":
         print("Displaying the first few rows of data transformed by the KNN column transformer...")
         print(data_sample[0:3, :])
 
-
+    ##### HYPER-PARAMETER TUNING SETUP START ##########
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     KNN_pipeline = get_KNN_classifier_pipeline()
@@ -174,6 +174,12 @@ if __name__ == "__main__":
     #algorithm_param_combinations = [(KNN_params, KNN_pipeline, 'KNN')]
     #algorithm_param_combinations = [(perceptron_params, perceptron_pipeline, 'perceptron')]
 
+    ####### HYPER-PARAMETER TUNING SETUP STOP ########
+
+
+
+
+    ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
     cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
@@ -181,41 +187,46 @@ if __name__ == "__main__":
     #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
     #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
+    ###### CV SETUP STOP #######
+
+
+    ######### SPECIFIC CLASSIFIER ANALYSIS START ###########
     #NOTE: This is for setting up a specific classifier in order to plot its learning/validation curves, confusion matrix, and generalization error
     cur_pipe = get_DT_classifier_pipeline()
-    # Paramters that will be used in everything but the validation curve (since the latter plots the parameter itself on the x-axis)
-    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
+    cur_pipe_name = 'DTree'
+    
+    # Parameters that will be used in everything but the validation curve (since the latter plots the parameter itself on the x-axis)
+    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=10)
 
     #Learning curve plot configuration
     train_sizes = np.arange(0.05, 1.05, 0.05)
     learning_curve_title = "DT learning curves"
 
     #Validation curve plot configuration
-    param_range = np.array(list(range(1, 51)))
     param_name = 'Decision_Tree_Classifier__max_depth'
     validation_curve_title = "DT Validation Curve"
+    param_range = np.array(list(range(1, 51)))
+
+
+    ####### SPECIFIC CLASSIFIER ANALYSIS STOP ###########
 
     for score in config.METRIC_LIST:
         if config.ANALYZE_LEARNING:
-            for _, estimator, name in algorithm_param_combinations:
-                if name == 'DTree':
-                    
-                    #TODO: The estimator here does not want to fit for some reason. Getting error: AttributeError: 'DecisionTreeClassifier' object has no attribute 'transform'
-                    estimator.set_params(
-                        Decision_Tree_Classifier__max_depth=50).fit(X_train, y_train)
-                    
+
+                cur_pipe.fit(X_train, y_train)
+
+                if cur_pipe_name == 'DTree':
+                    estimator = cur_pipe.named_steps['Decision_Tree_Classifier']
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
-                if name == 'KNN':
-                    estimator.set_params(KNN_Classifier__n_neighbors=5)
-                    estimator.fit(X_train, y_train)
+                elif cur_pipe_name == 'KNN':
+                    cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
                     #Extract the steps from the pipeline
-                    knn_classifier = estimator.named_steps['KNN_Classifier']
-                    knn_transformer = estimator.named_steps['Column Transformer']
-
+                    knn_classifier = cur_pipe.named_steps['KNN_Classifier']
+                    knn_transformer = cur_pipe.named_steps['Column Transformer']
 
                     #Index into the training set to retrieve a random sample of neighbours
                     sample_training_data_indices = np.random.randint(
@@ -247,6 +258,9 @@ if __name__ == "__main__":
                         sample_training_data_neighbors)
                     print("Neighbors of training data samples...")
                     print(neighbors_original_form)
+
+                else:
+                    print("The current classifier algorithm name is not recognized!!!")
             
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
         if config.TUNE_HYPER_PARAMETERS:
@@ -267,23 +281,14 @@ if __name__ == "__main__":
                                 n_jobs=-1,
                                 cv=cv_procedure,
                                 verbose=1,
-                                refit=True,
+                                refit=False,
                                 return_train_score=config.RETURN_TRAIN_SCORES)
                 gcv.fit(X_train, y_train) #NOTE: Although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV according to the cv argument
-                gridcvs[name] = gcv
+                gridcvs[name] = gcv #This stores the grid search object in the dictionary, which stores the results for all of the paramters fitted for the current algorithm and parameter combos
 
 
             #Get and print the results
             for name, gs_est in sorted(gridcvs.items()):
-
-                #TODO: Remove this once we have the ANALYZE_learning working correctly
-                #If we are using a decision tree we can create a graph of the tree to visualize how it makes decisions
-                if name == "DTree":
-                    print("Graphing the decision tree...")
-                    tree_estimator = gs_est.best_estimator_.named_steps['Decision_Tree_Classifier']
-                    graph_data = export_graphviz(decision_tree=tree_estimator, class_names=True, filled=True, rounded=True)
-                    graph = Source(graph_data, format="png")
-                    graph.render("./reports/figures/DTPlot-{}".format(score))
 
                 print("Best parameters found on development set for {}: {}".format(name, gs_est.best_params_))
                 print("Best score found on development set for {}: {}".format(name, gs_est.best_score_))
