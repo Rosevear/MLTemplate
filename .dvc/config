@@ -1,3 +1,5 @@
 
 ['remote "localStorage"']
 url = C:\Users\cr89536\Code\smartworks\ML\DataStore
+[core]
+remote = localStorage

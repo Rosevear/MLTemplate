@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 from sklearn.utils import shuffle
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
@@ -43,8 +43,8 @@ def get_DT_classifier_pipeline():
     """
 
     clf = DecisionTreeClassifier(random_state=config.RANDOM_SEED)
-
-    DT_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+    #TODO: try with ordinal encoding for time features ('Ordinal Encoding', OrdinalEncoder(), config.ORDINAL_COLUMNS),
+    DT_transformer = ColumnTransformer(transformers=[ ('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     DT_pipeline = Pipeline(steps=[('Column Transformer', DT_transformer),
@@ -100,8 +100,8 @@ if __name__ == "__main__":
     data = utils.load_csv(data_source, logger)
 
     #Extract the data set targets as their own column and remove from the original dataset
-    targets = data["ACCEPTED"]
-    del data["ACCEPTED"]
+    targets = data[config.TARGET_COLUMN_NAME]
+    del data[config.TARGET_COLUMN_NAME]
 
     #Visual check on the data format
     print("Displaying the columns of the data...")
@@ -177,8 +177,6 @@ if __name__ == "__main__":
     ####### HYPER-PARAMETER TUNING SETUP STOP ########
 
 
-
-
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
@@ -196,7 +194,7 @@ if __name__ == "__main__":
     cur_pipe_name = 'DTree'
     
     # Parameters that will be used in everything but the validation curve (since the latter plots the parameter itself on the x-axis)
-    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=10)
+    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=20)
 
     #Learning curve plot configuration
     train_sizes = np.arange(0.05, 1.05, 0.05)
@@ -206,7 +204,6 @@ if __name__ == "__main__":
     param_name = 'Decision_Tree_Classifier__max_depth'
     validation_curve_title = "DT Validation Curve"
     param_range = np.array(list(range(1, 51)))
-
 
     ####### SPECIFIC CLASSIFIER ANALYSIS STOP ###########
 
@@ -222,42 +219,43 @@ if __name__ == "__main__":
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
                 elif cur_pipe_name == 'KNN':
-                    cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
+                    pass
+                    # cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
-                    #Extract the steps from the pipeline
-                    knn_classifier = cur_pipe.named_steps['KNN_Classifier']
-                    knn_transformer = cur_pipe.named_steps['Column Transformer']
+                    # #Extract the steps from the pipeline
+                    # knn_classifier = cur_pipe.named_steps['KNN_Classifier']
+                    # knn_transformer = cur_pipe.named_steps['Column Transformer']
 
-                    #Index into the training set to retrieve a random sample of neighbours
-                    sample_training_data_indices = np.random.randint(
-                        0, num_samples, 10)
-                    sample_training_data = X_train.to_numpy(
-                    )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
+                    # #Index into the training set to retrieve a random sample of neighbours
+                    # sample_training_data_indices = np.random.randint(
+                    #     0, num_samples, 10)
+                    # sample_training_data = X_train.to_numpy(
+                    # )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
 
-                    #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
-                    sample_training_data = pd.DataFrame(
-                        sample_training_data, columns=X_train.columns)
+                    # #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
+                    # sample_training_data = pd.DataFrame(
+                    #     sample_training_data, columns=X_train.columns)
 
-                    #Transform the sample data via the pipeline to encode it properly for use by the algorithm
-                    transformed_sample_data = knn_transformer .transform(
-                        sample_training_data)
+                    # #Transform the sample data via the pipeline to encode it properly for use by the algorithm
+                    # transformed_sample_data = knn_transformer .transform(
+                    #     sample_training_data)
 
-                    #Get the neighbors of the queried points
-                    sample_training_data_neighbors = knn_classifier.kneighbors(
-                        transformed_sample_data)
+                    # #Get the neighbors of the queried points
+                    # sample_training_data_neighbors = knn_classifier.kneighbors(
+                    #     transformed_sample_data)
 
-                    #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
-                    #Reverse the encoding of data or easy inspection
-                    original_training_data = knn_transformer.inverse_transform(
-                        sample_training_data)
-                    print("Training data sample...")
-                    print(original_training_data)
+                    # #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
+                    # #Reverse the encoding of data or easy inspection
+                    # original_training_data = knn_transformer.inverse_transform(
+                    #     sample_training_data)
+                    # print("Training data sample...")
+                    # print(original_training_data)
 
-                    #Reverse the encoding of neighbors to compare to their respective query points
-                    neighbors_original_form = estimator.inverse_transform(
-                        sample_training_data_neighbors)
-                    print("Neighbors of training data samples...")
-                    print(neighbors_original_form)
+                    # #Reverse the encoding of neighbors to compare to their respective query points
+                    # neighbors_original_form = estimator.inverse_transform(
+                    #     sample_training_data_neighbors)
+                    # print("Neighbors of training data samples...")
+                    # print(neighbors_original_form)
 
                 else:
                     print("The current classifier algorithm name is not recognized!!!")
