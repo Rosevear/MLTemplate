@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_score, cross_val_predict
+from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 from graphviz import Source
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                     'KNN_Classifier__p': [2]}] 
     
     DT_pipeline = get_DT_classifier_pipeline()
-    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 2)),
+    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(50, 51)),
                     'Decision_Tree_Classifier__criterion': ['gini']}]
 
     logit_pipeline = get_logit_classifier_pipeline()
@@ -181,6 +181,20 @@ if __name__ == "__main__":
     #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
     #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
+    #NOTE: This is for setting up a specific classifier in order to plot its learning/validation curves, confusion matrix, and generalization error
+    cur_pipe = get_DT_classifier_pipeline()
+    # Paramters that will be used in everything but the validation curve (since the latter plots the parameter itself on the x-axis)
+    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
+
+    #Learning curve plot configuration
+    train_sizes = np.arange(0.05, 1.05, 0.05)
+    learning_curve_title = "DT learning curves"
+
+    #Validation curve plot configuration
+    param_range = np.array(list(range(1, 51)))
+    param_name = 'Decision_Tree_Classifier__max_depth'
+    validation_curve_title = "DT Validation Curve"
+
     for score in config.METRIC_LIST:
         if config.ANALYZE_LEARNING:
             for _, estimator, name in algorithm_param_combinations:
@@ -190,7 +204,7 @@ if __name__ == "__main__":
                     estimator.set_params(
                         Decision_Tree_Classifier__max_depth=50).fit(X_train, y_train)
                     
-                    graph_data = export_graphviz(estimator, class_names=[str(class_val) for class_val in targets.unique()], filled=True, rounded=True)
+                    graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
@@ -262,12 +276,12 @@ if __name__ == "__main__":
             #Get and print the results
             for name, gs_est in sorted(gridcvs.items()):
 
-                #TODO: Remove this once we have the ANALYZE_learning wokring correctly
+                #TODO: Remove this once we have the ANALYZE_learning working correctly
                 #If we are using a decision tree we can create a graph of the tree to visualize how it makes decisions
                 if name == "DTree":
+                    print("Graphing the decision tree...")
                     tree_estimator = gs_est.best_estimator_.named_steps['Decision_Tree_Classifier']
-                    graph_data = export_graphviz(tree_estimator, class_names=[str(
-                        class_val) for class_val in targets.unique()], filled=True, rounded=True)
+                    graph_data = export_graphviz(decision_tree=tree_estimator, class_names=True, filled=True, rounded=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
 
@@ -287,24 +301,18 @@ if __name__ == "__main__":
                 for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
                     print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
                 print("Finished the hyper-parameter tuning!\n")
-            
         
-        cur_pipe = get_DT_classifier_pipeline()
-        cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
-        learning_curve_title = "DT learning curves"
-        validation_curve_title = "DT Validation Curve"
+        
         #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
         if config.PLOT_LEARNING_CURVES:
             print('Training classifier for the learning curve...')
-            train_sizes = np.arange(0.10, 1.10, 0.10)
             learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train, y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
             learning_plot.show()
 
         #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
         if config.PLOT_VALIDATION_CURVES:
             print("Training classifier for the validation curve...")
-            param_name = 'Decision_Tree_Classifier__max_depth'
-            param_range = np.array(list(range(1, 51)))
+            
             validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train, param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
             validation_plot.show()
 
@@ -312,6 +320,12 @@ if __name__ == "__main__":
     #NOTE: This is a confusion matrix based on the predicted values generated during cross validation. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
     if config.COMPUTE_CONFUSION_MATRIX:
         predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=1)
+        unique, counts = np.unique(predictions, return_counts=True)
+        prediction_counts = dict(zip(unique, counts))
+        print("Classifier predictions...")
+        print(prediction_counts)
+        
+        
         tn, fp, fn, tp = confusion_matrix(y_true=y_train, y_pred=predictions).ravel()
         print("Confusion matrix results...")
         print("True Positive Rate: {}".format(tp))
@@ -319,18 +333,13 @@ if __name__ == "__main__":
         print("True Negative Rate: {}".format(tn))
         print("False Negative Rate: {}".format(fn))
 
-        print("Plotting the confusion matrix...")
-        plot = plot_confusion_matrix(estimator=cur_pipe, X=X_train, y_true=y_train, normalize=True)
-        plt.show()
+        # print("Plotting the confusion matrix...")
+        # plot = plot_confusion_matrix(estimator=cur_pipe, X=X_train, y_true=y_train, normalize=True)
+        # plt.show()
 
         
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
-    cur_pipe = get_DT_classifier_pipeline()
     if config.EVALUATE_TEST_SET:
-        #For using cross validation with a single train test split when we want to avoid k-fold validation within
-        #cv_procedure = ShuffleSplit(train_size=config.TRAINING_SET_SIZE, n_splits=1, random_state=config.RANDOM_SEED)
-        cur_pipe.set_params(Decision_Tree_Classifier__max_depth=50)
-        
         print("Training and testing the generalization score for accuracy...")
         cur_pipe.fit(X_train, y_train)
         final_score = cur_pipe.score(X_test, y_test)

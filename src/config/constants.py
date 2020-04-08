@@ -11,16 +11,16 @@ CUR_DATA_FILE = "BTUData.csv"
 
 ###############EXPERIMENT CONFIG###############
 TRAINING_SET_SIZE = 0.80
-RANDOM_SEED = 1
+RANDOM_SEED = 0
 K = 10  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 REPEATS = 10  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
-METRIC_LIST = ['accuracy', 'precision', 'recall']
-#METRIC_LIST = ['recall']
+#METRIC_LIST = ['accuracy', 'precision', 'recall']
+METRIC_LIST = ['recall']
 VERBOSITY = 1
 
 
 # Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
-ANALYZE_LEARNING = False
+ANALYZE_LEARNING = True
 TUNE_HYPER_PARAMETERS = False
 PLOT_LEARNING_CURVES = False
 PLOT_VALIDATION_CURVES = False
