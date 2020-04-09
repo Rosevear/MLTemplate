@@ -1,0 +1,8 @@
+md5: 6dd18cf3b7ea23f5b3b5e764fff4f310
+wdir: .
+outs:
+- md5: 7bb2d63e91127fd4c88d1ded95ecac34
+  path: Medicine_Hat_Full_Data_2020-04-09.csv
+  cache: true
+  metric: false
+  persist: false
