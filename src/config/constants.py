@@ -7,6 +7,7 @@ RAW_DATA_DIR = ROOT_DIR / "data/raw"
 INTERIM_DATA_DIR = ROOT_DIR / "data/interim"
 PROCESSED_DATA_DIR = ROOT_DIR /  "data/processed"
 CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
+#CUR_DATA_FILE = "Medicine_Hat_Full_Data_2020-04-09.csv"
 
 
 ###############EXPERIMENT CONFIG###############
@@ -20,7 +21,7 @@ VERBOSITY = 1
 
 
 # Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
-ANALYZE_LEARNING = True
+ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 PLOT_LEARNING_CURVES = True
 PLOT_VALIDATION_CURVES = True

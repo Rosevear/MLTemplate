@@ -1,0 +1,22 @@
+Medicine Hat 
+
+Max-depth = 20
+{0: 2053, 1: 4958}
+True Positive Rate: 4928
+False Positive Rate: 30
+True Negative Rate: 2024
+False Negative Rate: 29
+
+KNN
+{0: 2037, 1: 4974}
+True Positive Rate: 4848
+False Positive Rate: 126
+True Negative Rate: 1928
+False Negative Rate: 109
+
+Perceptron
+{0: 2101, 1: 4910}
+True Positive Rate: 4850
+False Positive Rate: 60
+True Negative Rate: 1994
+False Negative Rate: 107

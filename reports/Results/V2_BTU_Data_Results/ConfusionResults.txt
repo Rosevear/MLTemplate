@@ -1,0 +1,30 @@
+Wednesday Decision Tree Confusion Matrix for Max Depth = 20 BTU
+
+For overall X_train, y_train (not cross validation score)
+
+Decision Tree Classifier
+
+{0: 20911, 1: 21059}
+Confusion matrix results...
+True Positive Rate: 20418
+False Positive Rate: 641
+True Negative Rate: 20067
+False Negative Rate: 844
+
+KNN ClassifierClassifier predictions...
+{0: 20947, 1: 21023}
+Confusion matrix results...
+True Positive Rate: 20069
+False Positive Rate: 954
+True Negative Rate: 19754
+False Negative Rate: 1193
+
+Perceptron
+{0: 20235, 1: 21735}
+Confusion matrix results...
+True Positive Rate: 19138
+False Positive Rate: 2597
+True Negative Rate: 18111
+False Negative Rate: 2124
+
+
