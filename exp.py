@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
-from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict
+from sklearn.model_selection import RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 from graphviz import Source
@@ -64,7 +64,7 @@ def get_logit_classifier_pipeline():
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     logit_classifier_pipeline = Pipeline(steps=[('Column Transformer', logit_transformer),
-                            ('logit_Classifier', clf)])
+                            ('logit_classifier', clf)])
 
     return logit_classifier_pipeline
 
@@ -79,7 +79,7 @@ def get_perceptron_classifier_pipeline():
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     perceptron_classifier_pipeline = Pipeline(steps=[('Column Transformer', perceptron_transformer),
-                                                ('perceptron_Classifier', clf)])
+                                                ('perceptron_classifier', clf)])
 
     return perceptron_classifier_pipeline
 
@@ -121,8 +121,8 @@ if __name__ == "__main__":
     print("y_test data dimensions (row, column): {}".format(y_test.shape))
     num_samples = X_train.shape[0]
     num_features = X_train.shape[1]
-
-
+    
+    
     #Check that the accepted and rejected training targets are roughly equally balanced
     target_series = pd.Series(y_train)
     print('training set target counts \n {}'.format(target_series.value_counts()))
@@ -149,23 +149,23 @@ if __name__ == "__main__":
                     'KNN_Classifier__p': [2]}] 
     
     DT_pipeline = get_DT_classifier_pipeline()
-    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(50, 51)),
+    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 21)),
                     'Decision_Tree_Classifier__criterion': ['gini']}]
 
     logit_pipeline = get_logit_classifier_pipeline()
-    logit_params = [{'logit_Classifier__penalty': ['l2'],
-                    'logit_Classifier__C': np.power(10., np.arange(1))}]
+    logit_params = [{'logit_classifier__penalty': ['l2'],
+                    'logit_classifier__C': np.power(10., np.arange(1))}]
 
     perceptron_pipeline = get_perceptron_classifier_pipeline()
-    perceptron_params = [{'perceptron_classifier__': 'l1',
-                          'perceptron_classifier__alpha': 0.0001,
-                          'perceptron_classifier__fit_intercept': True,
-                          'perceptron_classifier__max_iter': 1000,
-                          'perceptron_classifier__tol': 1e-3,
-                          'perceptron_classifier__eta0': 1,
-                          'perceptron_classifier__early_stopping': True,
-                          'perceptron_classifier__validation_fraction': 0.1,
-                          'perceptron_classifier__n_iter_no_change': 5}]
+    perceptron_params = [{'perceptron_classifier__penalty': ['l1', 'l2'],
+                          'perceptron_classifier__alpha': np.arange(0.0000, 0.1, 0.005),
+                          'perceptron_classifier__max_iter': np.arange(500, 10000, 500),
+                          'perceptron_classifier__eta0': [0.01, 0.1, 1],
+                          'perceptron_classifier__tol': [1e-3, None],
+                          'perceptron_classifier__early_stopping': [True],
+                          'perceptron_classifier__validation_fraction': [0.1],
+                          'perceptron_classifier__shuffle': [True],
+                          'perceptron_classifier__n_iter_no_change': [5, 10]}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
     #algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
@@ -180,86 +180,111 @@ if __name__ == "__main__":
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+    #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
     
     #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-    #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+    cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+
+    # cv_procedure = RepeatedKFold(
+    #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
     ###### CV SETUP STOP #######
 
+    ####### SPECIFIC CLASSIFIER SETUP START #######
+    #Setup the classifier specific parameters for the learning and validation curves
+    print("Setting up the {} classifier for use wth the learning and validation curves...".format(
+        config.CUR_CLASSIFIER))
+    if config.CUR_CLASSIFIER == config.KNN:
+        cur_pipe = get_KNN_classifier_pipeline()
+        cur_pipe_name = 'KNN'
+        cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
+        param_name = 'KNN_Classifier__n_neighbors'
+        param_range = np.arange(1, 11, 1)
 
-    ######### SPECIFIC CLASSIFIER ANALYSIS START ###########
-    #NOTE: This is for setting up a specific classifier in order to plot its learning/validation curves, confusion matrix, and generalization error
-    cur_pipe = get_DT_classifier_pipeline()
-    cur_pipe_name = 'DTree'
-    
-    # Parameters that will be used in everything but the validation curve (since the latter plots the parameter itself on the x-axis)
-    cur_pipe.set_params(Decision_Tree_Classifier__max_depth=20)
+    elif config.CUR_CLASSIFIER == config.DT:
+        cur_pipe = get_DT_classifier_pipeline()
+        cur_pipe_name = 'DT'
+        cur_pipe.set_params(Decision_Tree_Classifier__max_depth=20)
+        param_name = 'Decision_Tree_Classifier__max_depth'
+        param_range = np.arange(1, 51)
 
-    #Learning curve plot configuration
-    train_sizes = np.arange(0.05, 1.05, 0.05)
-    learning_curve_title = "DT learning curves"
+    elif config.CUR_CLASSIFIER == config.PERCEPTRON:
+        cur_pipe.set_params(perceptron_classifier__penalty='l1',
+                            perceptron_classifier__alpha=0.0001,
+                            perceptron_classifier__fit_intercept=True,
+                            perceptron_classifier__max_iter=1000,
+                            perceptron_classifier__tol=1e-3,
+                            perceptron_classifier__eta0=1,
+                            perceptron_classifier__early_stopping=True,
+                            perceptron_classifier__validation_fraction=0.1,
+                            perceptron_classifier__n_iter_no_change=5)
 
-    #Validation curve plot configuration
-    param_name = 'Decision_Tree_Classifier__max_depth'
-    validation_curve_title = "DT Validation Curve"
-    param_range = np.array(list(range(1, 51)))
+        param_name = 'perceptron_classifier__max_iter'
+        param_range = np.arange(500, 10000, 500)
 
-    ####### SPECIFIC CLASSIFIER ANALYSIS STOP ###########
+    else:
+        print("No no classifier selected for the validation or learning curve...")
+
+    ######### SPECIFIC CLASSIFIER SETUP STOP ########
+
 
     for score in config.METRIC_LIST:
+
+        ######## LEARNING ANALYSIS START #########
         if config.ANALYZE_LEARNING:
 
                 cur_pipe.fit(X_train, y_train)
 
                 if cur_pipe_name == 'DTree':
                     estimator = cur_pipe.named_steps['Decision_Tree_Classifier']
-                    graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True)
+                    graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
                 elif cur_pipe_name == 'KNN':
-                    pass
-                    # cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
+                    cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
-                    # #Extract the steps from the pipeline
-                    # knn_classifier = cur_pipe.named_steps['KNN_Classifier']
-                    # knn_transformer = cur_pipe.named_steps['Column Transformer']
+                    #Extract the steps from the pipeline
+                    knn_classifier = cur_pipe.named_steps['KNN_Classifier']
+                    knn_transformer = cur_pipe.named_steps['Column Transformer']
 
-                    # #Index into the training set to retrieve a random sample of neighbours
-                    # sample_training_data_indices = np.random.randint(
-                    #     0, num_samples, 10)
-                    # sample_training_data = X_train.to_numpy(
-                    # )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
+                    #Index into the training set to retrieve a random sample of neighbours
+                    sample_training_data_indices = np.random.randint(
+                        0, num_samples, 10)
+                    sample_training_data = X_train.to_numpy(
+                    )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
 
-                    # #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
-                    # sample_training_data = pd.DataFrame(
-                    #     sample_training_data, columns=X_train.columns)
+                    #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
+                    sample_training_data = pd.DataFrame(
+                        sample_training_data, columns=X_train.columns)
 
-                    # #Transform the sample data via the pipeline to encode it properly for use by the algorithm
-                    # transformed_sample_data = knn_transformer .transform(
-                    #     sample_training_data)
+                    #Transform the sample data via the pipeline to encode it properly for use by the algorithm
+                    transformed_sample_data = knn_transformer.transform(
+                        sample_training_data)
 
-                    # #Get the neighbors of the queried points
-                    # sample_training_data_neighbors = knn_classifier.kneighbors(
-                    #     transformed_sample_data)
+                    #Get the neighbors of the queried points
+                    sample_training_data_neighbors = knn_classifier.kneighbors(
+                        transformed_sample_data)
 
                     # #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
-                    # #Reverse the encoding of data or easy inspection
-                    # original_training_data = knn_transformer.inverse_transform(
-                    #     sample_training_data)
-                    # print("Training data sample...")
-                    # print(original_training_data)
+                    #Reverse the encoding of data for easy inspection
+                    original_training_data = knn_transformer.inverse_transform(
+                        sample_training_data)
+                    print("Training data sample...")
+                    print(original_training_data)
 
-                    # #Reverse the encoding of neighbors to compare to their respective query points
-                    # neighbors_original_form = estimator.inverse_transform(
-                    #     sample_training_data_neighbors)
-                    # print("Neighbors of training data samples...")
-                    # print(neighbors_original_form)
+                    #Reverse the encoding of neighbors to compare to their respective query points
+                    neighbors_original_form = knn_transformer.inverse_transform(
+                        sample_training_data_neighbors)
+                    print("Neighbors of training data samples...")
+                    print(neighbors_original_form)
 
                 else:
                     print("The current classifier algorithm name is not recognized!!!")
-            
+
+        ########## LEARNING ANALYSIS STOP ###########
+        
+        ########## GRID SEARCH START ###########
         #Perform a grid search for each algorithm, to tune the hyper-parameters. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
         if config.TUNE_HYPER_PARAMETERS:
             print("Optimizing classifiers for {} ".format(score))
@@ -304,21 +329,33 @@ if __name__ == "__main__":
                 for mean, std, params in zip(test_cv_means, test_cv_stds, gs_est.cv_results_['params']):
                     print("Classifier: {}, Mean: {}, Standard Deviation: {}, Params: {}".format(name, mean, std, params))
                 print("Finished the hyper-parameter tuning!\n")
-        
-        
-        #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
-        if config.PLOT_LEARNING_CURVES:
-            print('Training classifier for the learning curve...')
-            learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train, y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
-            learning_plot.show()
 
-        #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
-        if config.PLOT_VALIDATION_CURVES:
-            print("Training classifier for the validation curve...")
-            
-            validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train, param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
-            validation_plot.show()
+        ####### GRID SEARCH STOP ##########
 
+
+    ######### LEARNING AND VALIDATION CURVES START ###########
+    #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+    if config.PLOT_LEARNING_CURVES:
+        print('Training classifier for the learning curve...')
+        train_sizes = np.arange(0.05, 1.05, 0.05)
+        learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
+        learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train,
+                                                    y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+        learning_plot.show()
+
+    #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
+    if config.PLOT_VALIDATION_CURVES:
+        print("Training classifier for the validation curve...")
+        validation_curve_title = "{} Validation Curve".format(
+            cur_pipe_name)
+        validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train,
+                                                        param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+        validation_plot.show()
+
+    ########## LEARNING AND VALIDATION CURVES STOP ###########
+
+
+    ######## CONFUSION MATRIX START ########
     #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
     #NOTE: This is a confusion matrix based on the predicted values generated during cross validation. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
     if config.COMPUTE_CONFUSION_MATRIX:
@@ -336,16 +373,16 @@ if __name__ == "__main__":
         print("True Negative Rate: {}".format(tn))
         print("False Negative Rate: {}".format(fn))
 
-        # print("Plotting the confusion matrix...")
-        # plot = plot_confusion_matrix(estimator=cur_pipe, X=X_train, y_true=y_train, normalize=True)
-        # plt.show()
+    ######### CONFUSION MATRIX STOP ##########
 
         
+    ######### GENERALIZATION TEST START #########
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
     if config.EVALUATE_TEST_SET:
         print("Training and testing the generalization score for accuracy...")
         cur_pipe.fit(X_train, y_train)
         final_score = cur_pipe.score(X_test, y_test)
         print("Mean Generalization score: {} ".format(final_score))
+    ######### GENERALIZATION TEST STOP ########
 
 

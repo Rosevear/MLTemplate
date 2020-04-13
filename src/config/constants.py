@@ -1,7 +1,7 @@
 from pathlib import Path
 import logging
 
-###############DIRECTORY STRUCTURE################
+############### DIRECTORY STRUCTURE ################
 ROOT_DIR = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = ROOT_DIR / "data/raw"
 INTERIM_DATA_DIR = ROOT_DIR / "data/interim"
@@ -10,7 +10,15 @@ CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
 #CUR_DATA_FILE = "Medicine_Hat_Full_Data_2020-04-09.csv"
 
 
-###############EXPERIMENT CONFIG###############
+############# CLASSIFIERS ##############
+KNN = "KNN"
+DT = "DT"
+PERCEPTRON = "PERCEPTRON"
+
+CUR_CLASSIFIER = KNN
+
+
+############### EXPERIMENT CONFIG ###############
 TRAINING_SET_SIZE = 0.80
 RANDOM_SEED = 0
 K = 10  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
@@ -21,11 +29,11 @@ VERBOSITY = 1
 
 
 # Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
-ANALYZE_LEARNING = False
+ANALYZE_LEARNING = True
 TUNE_HYPER_PARAMETERS = False
-PLOT_LEARNING_CURVES = True
-PLOT_VALIDATION_CURVES = True
-COMPUTE_CONFUSION_MATRIX = True
+PLOT_LEARNING_CURVES = False
+PLOT_VALIDATION_CURVES = False
+COMPUTE_CONFUSION_MATRIX = False
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
 EVALUATE_TEST_SET = False
@@ -41,7 +49,7 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_LEVEL = logging.INFO
 LOGFILE = ROOT_DIR / "logs" / "data.log"
 
-#######DATA########
+####### DATA ########
 CATEGORICAL_COLUMNS = ['LOCATION_CLASS', 
 'YEAR', 'MONTH', 'DAY', 'DOW', 
 'PREVYEAR', 'PREVMONTH', 'PREVDAY','PREVDOW', 'PREV_UOM', 
