@@ -209,6 +209,7 @@ if __name__ == "__main__":
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
+        cur_pipe = get_perceptron_classifier_pipeline()
         cur_pipe.set_params(perceptron_classifier__penalty='l1',
                             perceptron_classifier__alpha=0.0001,
                             perceptron_classifier__fit_intercept=True,
@@ -235,13 +236,13 @@ if __name__ == "__main__":
 
                 cur_pipe.fit(X_train, y_train)
 
-                if cur_pipe_name == 'DTree':
+                if config.CUR_CLASSIFIER == config.DT:
                     estimator = cur_pipe.named_steps['Decision_Tree_Classifier']
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
-                elif cur_pipe_name == 'KNN':
+                elif config.CUR_CLASSIFIER == config.KNN:
                     cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
                     #Extract the steps from the pipeline
@@ -264,20 +265,20 @@ if __name__ == "__main__":
 
                     #Get the neighbors of the queried points
                     sample_training_data_neighbors = knn_classifier.kneighbors(
-                        transformed_sample_data)
+                        X=transformed_sample_data, return_distance=True)
 
                     # #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
                     #Reverse the encoding of data for easy inspection
-                    original_training_data = knn_transformer.inverse_transform(
-                        sample_training_data)
-                    print("Training data sample...")
-                    print(original_training_data)
+                    # original_training_data = knn_transformer.inverse_transform(
+                    #     sample_training_data)
+                    # print("Training data sample...")
+                    # print(original_training_data)
 
-                    #Reverse the encoding of neighbors to compare to their respective query points
-                    neighbors_original_form = knn_transformer.inverse_transform(
-                        sample_training_data_neighbors)
-                    print("Neighbors of training data samples...")
-                    print(neighbors_original_form)
+                    # #Reverse the encoding of neighbors to compare to their respective query points
+                    # neighbors_original_form = knn_transformer.inverse_transform(
+                    #     sample_training_data_neighbors)
+                    # print("Neighbors of training data samples...")
+                    # print(neighbors_original_form)
 
                 else:
                     print("The current classifier algorithm name is not recognized!!!")
@@ -336,7 +337,7 @@ if __name__ == "__main__":
     ######### LEARNING AND VALIDATION CURVES START ###########
     #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
     if config.PLOT_LEARNING_CURVES:
-        print('Training classifier for the learning curve...')
+        print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
         train_sizes = np.arange(0.05, 1.05, 0.05)
         learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
         learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train,
@@ -345,7 +346,7 @@ if __name__ == "__main__":
 
     #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
     if config.PLOT_VALIDATION_CURVES:
-        print("Training classifier for the validation curve...")
+        print("Training {} classifier for the validation curve...".format(config.CUR_CLASSIFIER))
         validation_curve_title = "{} Validation Curve".format(
             cur_pipe_name)
         validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train,
@@ -359,6 +360,7 @@ if __name__ == "__main__":
     #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
     #NOTE: This is a confusion matrix based on the predicted values generated during cross validation. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
     if config.COMPUTE_CONFUSION_MATRIX:
+        print("Computing the confusion matrix for {} classifier".format(config.CUR_CLASSIFIER))
         predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=1)
         unique, counts = np.unique(predictions, return_counts=True)
         prediction_counts = dict(zip(unique, counts))
