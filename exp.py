@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
     ####### SPECIFIC CLASSIFIER SETUP START #######
     #Setup the classifier specific parameters for the learning and validation curves
-    print("Setting up the {} classifier for use wth the learning and validation curves...".format(
+    print("Setting up the {} classifier...".format(
         config.CUR_CLASSIFIER))
     if config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline()
@@ -237,12 +237,14 @@ if __name__ == "__main__":
                 cur_pipe.fit(X_train, y_train)
 
                 if config.CUR_CLASSIFIER == config.DT:
+                    print("Analyzing the Decison Tree algorithm...")
                     estimator = cur_pipe.named_steps['Decision_Tree_Classifier']
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
                 
                 elif config.CUR_CLASSIFIER == config.KNN:
+                    print("Analyzing the KNN algorithm...")
                     cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
                     #Extract the steps from the pipeline
@@ -250,35 +252,60 @@ if __name__ == "__main__":
                     knn_transformer = cur_pipe.named_steps['Column Transformer']
 
                     #Index into the training set to retrieve a random sample of neighbours
+                    num_points_to_query = 1
                     sample_training_data_indices = np.random.randint(
-                        0, num_samples, 10)
-                    sample_training_data = X_train.to_numpy(
-                    )[np.array([sample_training_data_indices])][0] #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
+                        0, num_samples, num_points_to_query)
 
+                    print("Sample data indices")
+                    print(sample_training_data_indices)
+                    
+                    #Convert the training set to a numpy array for integer indexing extraction of query points
+                    X_train_np = X_train.to_numpy()
+                   
+                    #Returns a 3 dimensional array of (1, 10, 23), so we need to index into the first dimension to get the 10 examples with 23 features
+                    sample_training_data = X_train_np[np.array(
+                        [sample_training_data_indices])][0]
+
+                    print("Query points numpy")
+                    print(sample_training_data)
+                    
                     #Transform the sample data back into a pandas dataframe for use with the current column transformer (it references columns by column name, which is not available to pure numpy arrays)
-                    sample_training_data = pd.DataFrame(
+                    sample_training_data_df = pd.DataFrame(
                         sample_training_data, columns=X_train.columns)
+
+                    print("Query Points Data Frame format")
+                    print(sample_training_data_df)
+
+                    # print("Value at original data frame")
+                    # first_randomly_selected_index = sample_training_data_indices[0]
+                    # print(X_train.iloc[[first_randomly_selected_index]])
 
                     #Transform the sample data via the pipeline to encode it properly for use by the algorithm
                     transformed_sample_data = knn_transformer.transform(
-                        sample_training_data)
+                        sample_training_data_df)
 
                     #Get the neighbors of the queried points
-                    sample_training_data_neighbors = knn_classifier.kneighbors(
+                    #NOTE: The indices returned by the neighbor query correspond to the indices of the training set fit to the current model, so we can just index into X_train to get the human readable neighbours of the current queries
+                    sample_training_data_neighbors_distance, sample_training_data_neighbors_indices = knn_classifier.kneighbors(
                         X=transformed_sample_data, return_distance=True)
 
-                    # #TODO: Need to find a way to reverse the transform here as it looks like the column transformer and pipeline do not support that out of the box
-                    #Reverse the encoding of data for easy inspection
-                    # original_training_data = knn_transformer.inverse_transform(
-                    #     sample_training_data)
-                    # print("Training data sample...")
-                    # print(original_training_data)
+                    print("Sample data neighbour indices")
+                    print(sample_training_data_neighbors_indices)
+                    
+                    true_neighbours = sample_training_data_neighbors_indices[0, 1:]
+                    print("True neighbour indices  excluding self")
+                    print(true_neighbours)
+                    
+                    print("nearest neighbours")
+                    nn = X_train_np[np.array(
+                        [true_neighbours])][0]
+                    print(nn)
 
-                    # #Reverse the encoding of neighbors to compare to their respective query points
-                    # neighbors_original_form = knn_transformer.inverse_transform(
-                    #     sample_training_data_neighbors)
-                    # print("Neighbors of training data samples...")
-                    # print(neighbors_original_form)
+                    print("Query points numpy for comparison")
+                    print(sample_training_data)
+
+                    print("Sample data neighbour distances")
+                    print(sample_training_data_neighbors_distance[0, 1:])
 
                 else:
                     print("There is no learning analysis path for the current classifier: {}".format(config.CUR_CLASSIFIER))
