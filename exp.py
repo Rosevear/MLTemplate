@@ -224,7 +224,7 @@ if __name__ == "__main__":
         param_range = np.arange(500, 10000, 500)
 
     else:
-        print("No no classifier selected for the validation or learning curve...")
+        print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))
 
     ######### SPECIFIC CLASSIFIER SETUP STOP ########
 
@@ -281,7 +281,7 @@ if __name__ == "__main__":
                     # print(neighbors_original_form)
 
                 else:
-                    print("The current classifier algorithm name is not recognized!!!")
+                    print("There is no learning analysis path for the current classifier: {}".format(config.CUR_CLASSIFIER))
 
         ########## LEARNING ANALYSIS STOP ###########
         
