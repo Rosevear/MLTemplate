@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
-from sklearn.model_selection import RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
+from sklearn.model_selection import TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 from graphviz import Source
@@ -86,7 +86,9 @@ def get_perceptron_classifier_pipeline():
 if __name__ == "__main__":
 
     print("Starting the experiment at {}".format(datetime.now()))
-    np.set_printoptions(threshold=np.inf) #Avoid truncating columns in numpy arrays printed to std (for easier visual inspection)
+    
+    #Avoid truncating columns in numpy arrays printed to std (for easier visual inspection)
+    np.set_printoptions(threshold=np.inf)
 
     #Load environment variables
     dotenv.load_dotenv(dotenv.find_dotenv())
@@ -104,18 +106,32 @@ if __name__ == "__main__":
     targets = data[config.TARGET_COLUMN_NAME]
     del data[config.TARGET_COLUMN_NAME]
 
+    if config.IS_TIME_SERIES:
+        # Remove the date column used only for sorting the data by date
+        del data[config.TIME_SERIES_COLUMN]
+        # We want the test set to be the last 20% of the data, so no shuffling
+        shuffle_data = False
+        stratify_by = None
+        #Training sizes used by the learning curve plot in absolute terms
+        # train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663,
+        #                24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773]) 
+    else:
+        shuffle_data = True
+        stratify_by = targets
+        #train_sizes = np.arange(0.05, 1.05, 0.05)
+    
     #Visual check on the data format
     print("Displaying the columns of the data...")
     print(list(data))
     print("Displaying the first few rows of the data...")
     print(data.head(10))
-
+    
     print("Splitting the training data...")
     X_train, X_test, y_train, y_test = train_test_split(data, targets,
                                                         train_size=config.TRAINING_SET_SIZE,
                                                         random_state=config.RANDOM_SEED,
-                                                        shuffle=True,
-                                                        stratify=targets)
+                                                        shuffle=shuffle_data,
+                                                        stratify=stratify_by)
     print("X_train dimensions (row, column): {}".format(X_train.shape))
     print("X_test data dimensions (row, column): {}".format(X_test.shape))
     print("y_train data dimensions (row, column): {}".format(y_train.shape))
@@ -180,14 +196,17 @@ if __name__ == "__main__":
 
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
-    #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-    
-    #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-    #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+    if config.IS_TIME_SERIES:
+        cv_procedure = TimeSeriesSplit(n_splits=10)
+    else:
+        #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+        cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+        
+        #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
+        #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
-    # cv_procedure = RepeatedKFold(
-    #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+        # cv_procedure = RepeatedKFold(
+        #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
     ###### CV SETUP STOP #######
 
@@ -364,6 +383,8 @@ if __name__ == "__main__":
 
     ######### LEARNING AND VALIDATION CURVES START ###########
     #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+    print('learning curve shape')
+    print(X_train.shape)
     if config.PLOT_LEARNING_CURVES:
         print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
         train_sizes = np.arange(0.05, 1.05, 0.05)
@@ -424,6 +445,12 @@ if __name__ == "__main__":
 
     ######### CONFUSION MATRIX STOP ##########
 
+
+    ####### CROSS TRAIN START #######
+    if config.IS_CROSS_TRAIN:
+        pass
+
+    ###### CROSS TRAIN STOP ######
         
     ######### GENERALIZATION TEST START #########
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data

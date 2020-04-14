@@ -5,9 +5,12 @@ import logging
 ROOT_DIR = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = ROOT_DIR / "data/raw"
 INTERIM_DATA_DIR = ROOT_DIR / "data/interim"
-PROCESSED_DATA_DIR = ROOT_DIR /  "data/processed"
+PROCESSED_DATA_DIR = ROOT_DIR / "data/processed"
+PROCESSED_FILE_SAVE_SUFFIX = "_time_series"
+PROCESSED_FILE_EXTENSION = ".csv"
 CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
-#CUR_DATA_FILE = "Medicine_Hat_Full_Data_2020-04-09.csv"
+CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08_time_series.csv"
+#CROSS_TEST_FILE =  "Medicine_Hat_Full_Data_2020-04-09.csv"
 
 
 ############# CLASSIFIERS ##############
@@ -31,18 +34,25 @@ VERBOSITY = 1
 # Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
 ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
-PLOT_LEARNING_CURVES = False
+PLOT_LEARNING_CURVES = True
 PLOT_VALIDATION_CURVES = False
 COMPUTE_CONFUSION_MATRIX = False
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
-EVALUATE_TEST_SET = True
+EVALUATE_TEST_SET = False
 
 #Whether or not to return the training scores during gridSearchCV
 RETURN_TRAIN_SCORES = True
 
 #Shuffle the targets of the training set in order to test if the algorithm is still getting some type of signal (probably a sign of data leakage)
 SHUFFLE_TARGETS = False
+
+#Whether or not the data should be treated as time series for the purposes of splitting and evaluation
+IS_TIME_SERIES = True
+TIME_SERIES_COLUMN = 'Date'
+
+#Set whether or not the algorithm should be trained on one data set and tested on another
+IS_CROSS_TRAIN = False
 
 ####### LOGGING CONFIG######
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
