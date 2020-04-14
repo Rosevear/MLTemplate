@@ -86,6 +86,7 @@ def get_perceptron_classifier_pipeline():
 if __name__ == "__main__":
 
     print("Starting the experiment at {}".format(datetime.now()))
+    np.set_printoptions(threshold=np.inf) #Avoid truncating columns in numpy arrays printed to std (for easier visual inspection)
 
     #Load environment variables
     dotenv.load_dotenv(dotenv.find_dotenv())
@@ -252,7 +253,7 @@ if __name__ == "__main__":
                     knn_transformer = cur_pipe.named_steps['Column Transformer']
 
                     #Index into the training set to retrieve a random sample of neighbours
-                    num_points_to_query = 2
+                    num_points_to_query = 10
                     sample_training_data_indices = np.random.randint(
                         0, num_samples, num_points_to_query)
 
