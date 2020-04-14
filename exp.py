@@ -10,7 +10,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.metrics import confusion_matrix, plot_confusion_matrix
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 from sklearn.model_selection import RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
@@ -33,7 +33,7 @@ def get_KNN_classifier_pipeline():
         sparse=False, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     KNN_pipeline = Pipeline(steps=[('Column Transformer', KNN_transformer),
-                            ('KNN_Classifier', clf)])
+                            ('Classifier', clf)])
     
     return KNN_pipeline
 
@@ -48,7 +48,7 @@ def get_DT_classifier_pipeline():
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     DT_pipeline = Pipeline(steps=[('Column Transformer', DT_transformer),
-                            ('Decision_Tree_Classifier', clf)])
+                            ('Classifier', clf)])
 
     return DT_pipeline
 
@@ -64,7 +64,7 @@ def get_logit_classifier_pipeline():
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     logit_classifier_pipeline = Pipeline(steps=[('Column Transformer', logit_transformer),
-                            ('logit_classifier', clf)])
+                            ('Classifier', clf)])
 
     return logit_classifier_pipeline
 
@@ -79,7 +79,7 @@ def get_perceptron_classifier_pipeline():
         sparse=True, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
 
     perceptron_classifier_pipeline = Pipeline(steps=[('Column Transformer', perceptron_transformer),
-                                                ('perceptron_classifier', clf)])
+                                                ('Classifier', clf)])
 
     return perceptron_classifier_pipeline
 
@@ -145,27 +145,27 @@ if __name__ == "__main__":
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     KNN_pipeline = get_KNN_classifier_pipeline()
-    KNN_params = [{'KNN_Classifier__n_neighbors': list(range(5, 6)),
-                    'KNN_Classifier__p': [2]}] 
+    KNN_params = [{'Classifier__n_neighbors': list(range(5, 6)),
+                    'Classifier__p': [2]}] 
     
     DT_pipeline = get_DT_classifier_pipeline()
-    DT_params = [{'Decision_Tree_Classifier__max_depth': list(range(1, 21)),
-                    'Decision_Tree_Classifier__criterion': ['gini']}]
+    DT_params = [{'Classifier__max_depth': list(range(1, 21)),
+                    'Classifier__criterion': ['gini']}]
 
     logit_pipeline = get_logit_classifier_pipeline()
-    logit_params = [{'logit_classifier__penalty': ['l2'],
-                    'logit_classifier__C': np.power(10., np.arange(1))}]
+    logit_params = [{'Classifier__penalty': ['l2'],
+                    'Classifier__C': np.power(10., np.arange(1))}]
 
     perceptron_pipeline = get_perceptron_classifier_pipeline()
-    perceptron_params = [{'perceptron_classifier__penalty': ['l1', 'l2'],
-                          'perceptron_classifier__alpha': np.arange(0.0000, 0.1, 0.005),
-                          'perceptron_classifier__max_iter': np.arange(500, 10000, 500),
-                          'perceptron_classifier__eta0': [0.01, 0.1, 1],
-                          'perceptron_classifier__tol': [1e-3, None],
-                          'perceptron_classifier__early_stopping': [True],
-                          'perceptron_classifier__validation_fraction': [0.1],
-                          'perceptron_classifier__shuffle': [True],
-                          'perceptron_classifier__n_iter_no_change': [5, 10]}]
+    perceptron_params = [{'Classifier__penalty': ['l1', 'l2'],
+                          'Classifier__alpha': np.arange(0.0000, 0.1, 0.005),
+                          'Classifier__max_iter': np.arange(500, 10000, 500),
+                          'Classifier__eta0': [0.01, 0.1, 1],
+                          'Classifier__tol': [1e-3, None],
+                          'Classifier__early_stopping': [True],
+                          'Classifier__validation_fraction': [0.1],
+                          'Classifier__shuffle': [True],
+                          'Classifier__n_iter_no_change': [5, 10]}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
     #algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
@@ -180,10 +180,10 @@ if __name__ == "__main__":
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-    #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+    cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
     
     #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-    cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+    #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
     # cv_procedure = RepeatedKFold(
     #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
@@ -197,30 +197,30 @@ if __name__ == "__main__":
     if config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline()
         cur_pipe_name = 'KNN'
-        cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
-        param_name = 'KNN_Classifier__n_neighbors'
+        cur_pipe.set_params(Classifier__n_neighbors=5)
+        param_name = 'Classifier__n_neighbors'
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline()
         cur_pipe_name = 'DT'
-        cur_pipe.set_params(Decision_Tree_Classifier__max_depth=20)
-        param_name = 'Decision_Tree_Classifier__max_depth'
+        cur_pipe.set_params(Classifier__max_depth=20)
+        param_name = 'Classifier__max_depth'
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
         cur_pipe = get_perceptron_classifier_pipeline()
-        cur_pipe.set_params(perceptron_classifier__penalty='l1',
-                            perceptron_classifier__alpha=0.0001,
-                            perceptron_classifier__fit_intercept=True,
-                            perceptron_classifier__max_iter=1000,
-                            perceptron_classifier__tol=1e-3,
-                            perceptron_classifier__eta0=1,
-                            perceptron_classifier__early_stopping=True,
-                            perceptron_classifier__validation_fraction=0.1,
-                            perceptron_classifier__n_iter_no_change=5)
+        cur_pipe.set_params(Classifier__penalty='l1',
+                            Classifier__alpha=0.0001,
+                            Classifier__fit_intercept=True,
+                            Classifier__max_iter=1000,
+                            Classifier__tol=1e-3,
+                            Classifier__eta0=1,
+                            Classifier__early_stopping=True,
+                            Classifier__validation_fraction=0.1,
+                            Classifier__n_iter_no_change=5)
 
-        param_name = 'perceptron_classifier__max_iter'
+        param_name = 'Classifier__max_iter'
         param_range = np.arange(500, 10000, 500)
 
     else:
@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
                 if config.CUR_CLASSIFIER == config.DT:
                     print("Analyzing the Decison Tree algorithm...")
-                    estimator = cur_pipe.named_steps['Decision_Tree_Classifier']
+                    estimator = cur_pipe.named_steps['Classifier']
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
@@ -248,7 +248,7 @@ if __name__ == "__main__":
                     cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
 
                     #Extract the steps from the pipeline
-                    knn_classifier = cur_pipe.named_steps['KNN_Classifier']
+                    knn_classifier = cur_pipe.named_steps['Classifier']
                     knn_transformer = cur_pipe.named_steps['Column Transformer']
 
                     #Index into the training set to retrieve a random sample of neighbours
@@ -385,8 +385,19 @@ if __name__ == "__main__":
 
     ######## CONFUSION MATRIX START ########
     #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
-    #NOTE: This is a confusion matrix based on the predicted values generated during cross validation. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
+    display_labels = np.array(config.CLASSES)
+    cmap = 'viridis'
+    ax = None
+    xticks_rotation = 'horizontal'
+    values_format = None
+    include_values = True
     if config.COMPUTE_CONFUSION_MATRIX:
+        """"
+        Since the plot_confusion_matrix function actually generates its own predictions based on the X value passed in, passing in the training set would not provide predictions of the folds used in cross-validation
+        #So we get the values predicted during cross validation and get the confusion matrix from that
+        #NOTE: This does not average the confusion matrix score across each train/validate split, but instead just reports the total score across ALL predictions made.
+        See for more detail: See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
+        """
         print("Computing the confusion matrix for {} classifier".format(config.CUR_CLASSIFIER))
         predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=1)
         unique, counts = np.unique(predictions, return_counts=True)
@@ -394,13 +405,21 @@ if __name__ == "__main__":
         print("Classifier predictions...")
         print(prediction_counts)
         
-        
-        tn, fp, fn, tp = confusion_matrix(y_true=y_train, y_pred=predictions).ravel()
+        confusion_matrix = confusion_matrix(y_true=y_train, y_pred=predictions, normalize='all')
+        tn, fp, fn, tp = confusion_matrix.ravel()
         print("Confusion matrix results...")
         print("True Positive Rate: {}".format(tp))
         print("False Positive Rate: {}".format(fp))
         print("True Negative Rate: {}".format(tn))
         print("False Negative Rate: {}".format(fn))
+
+        #We need to bypass the predictions made i nthe plot_confusion_matrix function so we create the confusion matrix display directly. See https://github.com/scikit-learn/scikit-learn/blob/95d4f0841/sklearn/metrics/_plot/confusion_matrix.py#L119
+        disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix,
+                                      display_labels=display_labels)
+        disp.plot(include_values=include_values,
+                     cmap=cmap, ax=ax, xticks_rotation=xticks_rotation,
+                     values_format=values_format)
+        plt.show()
 
     ######### CONFUSION MATRIX STOP ##########
 
@@ -412,6 +431,10 @@ if __name__ == "__main__":
         cur_pipe.fit(X_train, y_train)
         final_score = cur_pipe.score(X_test, y_test)
         print("Mean Generalization score: {} ".format(final_score))
+        
+        print("Plotting the confusion matrix for the test set...")
+        plot_confusion_matrix(estimator=cur_pipe, X=X_test, y_true=y_test, labels=display_labels, normalize='all', include_values=include_values, cmap=cmap, ax=ax, xticks_rotation=xticks_rotation, values_format=values_format)
+        plt.show()
     ######### GENERALIZATION TEST STOP ########
 
 

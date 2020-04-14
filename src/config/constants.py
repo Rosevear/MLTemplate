@@ -15,7 +15,7 @@ KNN = "KNN"
 DT = "DT"
 PERCEPTRON = "PERCEPTRON"
 
-CUR_CLASSIFIER = KNN
+CUR_CLASSIFIER = DT
 
 
 ############### EXPERIMENT CONFIG ###############
@@ -29,14 +29,14 @@ VERBOSITY = 1
 
 
 # Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
-ANALYZE_LEARNING = True
+ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 PLOT_LEARNING_CURVES = False
 PLOT_VALIDATION_CURVES = False
 COMPUTE_CONFUSION_MATRIX = False
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
-EVALUATE_TEST_SET = False
+EVALUATE_TEST_SET = True
 
 #Whether or not to return the training scores during gridSearchCV
 RETURN_TRAIN_SCORES = True
@@ -48,6 +48,9 @@ SHUFFLE_TARGETS = False
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_LEVEL = logging.INFO
 LOGFILE = ROOT_DIR / "logs" / "data.log"
+
+##### CLASSES #####
+CLASSES = [1, 0]
 
 ####### DATA ########
 CATEGORICAL_COLUMNS = ['LOCATION_CLASS', 
