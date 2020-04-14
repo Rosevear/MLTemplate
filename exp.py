@@ -245,14 +245,14 @@ if __name__ == "__main__":
                 
                 elif config.CUR_CLASSIFIER == config.KNN:
                     print("Analyzing the KNN algorithm...")
-                    cur_pipe.set_params(KNN_Classifier__n_neighbors=5)
+                    cur_pipe.set_params(Classifier__n_neighbors=6)
 
                     #Extract the steps from the pipeline
                     knn_classifier = cur_pipe.named_steps['Classifier']
                     knn_transformer = cur_pipe.named_steps['Column Transformer']
 
                     #Index into the training set to retrieve a random sample of neighbours
-                    num_points_to_query = 1
+                    num_points_to_query = 2
                     sample_training_data_indices = np.random.randint(
                         0, num_samples, num_points_to_query)
 
@@ -292,7 +292,7 @@ if __name__ == "__main__":
                     print("Sample data neighbour indices")
                     print(sample_training_data_neighbors_indices)
                     
-                    true_neighbours = sample_training_data_neighbors_indices[0, 1:]
+                    true_neighbours = sample_training_data_neighbors_indices[:, 1:]
                     print("True neighbour indices  excluding self")
                     print(true_neighbours)
                     
@@ -305,7 +305,7 @@ if __name__ == "__main__":
                     print(sample_training_data)
 
                     print("Sample data neighbour distances")
-                    print(sample_training_data_neighbors_distance[0, 1:])
+                    print(sample_training_data_neighbors_distance[:, 1:])
 
                 else:
                     print("There is no learning analysis path for the current classifier: {}".format(config.CUR_CLASSIFIER))
