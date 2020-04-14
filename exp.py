@@ -448,7 +448,17 @@ if __name__ == "__main__":
 
     ####### CROSS TRAIN START #######
     if config.IS_CROSS_TRAIN:
-        pass
+        print("Loading the cross-testing data...")
+        cross_data_source = config.PROCESSED_DATA_DIR / config.CUR_DATA_FILE / config.CROSS_TEST_FILE
+        cross_data = utils.load_csv(data_source, logger)
+        cross_targets = cross_data[config.TARGET_COLUMN_NAME]
+        del cross_data[config.TARGET_COLUMN_NAME]
+
+        cur_pipe.fit(data, targets)
+        cross_test_score = cur_pipe.score(cross_data, cross_targets)
+        print("Cross Test generalization score {}".format(cross_test_score))
+
+        
 
     ###### CROSS TRAIN STOP ######
         
@@ -458,7 +468,7 @@ if __name__ == "__main__":
         print("Training and testing the generalization score for accuracy...")
         cur_pipe.fit(X_train, y_train)
         final_score = cur_pipe.score(X_test, y_test)
-        print("Mean Generalization score: {} ".format(final_score))
+        print("Test generalization score: {} ".format(final_score))
         
         print("Plotting the confusion matrix for the test set...")
         plot_confusion_matrix(estimator=cur_pipe, X=X_test, y_true=y_test, labels=display_labels, normalize='all', include_values=include_values, cmap=cmap, ax=ax, xticks_rotation=xticks_rotation, values_format=values_format)
