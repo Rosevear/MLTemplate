@@ -15,9 +15,25 @@ from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 from sklearn.model_selection import TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
 from sklearn.pipeline import Pipeline
+from sklearn.dummy import DummyClassifier
 import matplotlib.pyplot as plt
 from graphviz import Source
 from datetime import datetime
+
+def get_dummy_classifier_pipeline(cur_strategy):
+    """
+    Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
+    """
+
+    clf = DummyClassifier(strategy=cur_strategy)
+
+    dummy_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=False, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
+
+    dummy_pipeline = Pipeline(steps=[('Column Transformer', dummy_transformer),
+                                   ('Classifier', clf)])
+
+    return dummy_pipeline
 
 
 def get_KNN_classifier_pipeline():
@@ -217,22 +233,27 @@ if __name__ == "__main__":
     #Setup the classifier specific parameters for the learning and validation curves
     print("Setting up the {} classifier...".format(
         config.CUR_CLASSIFIER))
-    if config.CUR_CLASSIFIER == config.KNN:
+    if config.CUR_CLASSIFIER == config.DUMMY:
+        cur_pipe = get_dummy_classifier_pipeline("prior")
+        cur_pipe_name = config.DUMMY
+
+    elif config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline()
-        cur_pipe_name = 'KNN'
+        cur_pipe_name = config.KNN
         cur_pipe.set_params(Classifier__n_neighbors=5)
         param_name = 'Classifier__n_neighbors'
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline()
-        cur_pipe_name = 'DT'
+        cur_pipe_name = config.DT
         cur_pipe.set_params(Classifier__max_depth=20)
         param_name = 'Classifier__max_depth'
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
         cur_pipe = get_perceptron_classifier_pipeline()
+        cur_pipe_name = config.PERCEPTRON
         cur_pipe.set_params(Classifier__penalty='l1',
                             Classifier__alpha=0.0001,
                             Classifier__fit_intercept=True,
