@@ -13,9 +13,10 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
-from sklearn.model_selection import TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, ParameterSampler
+from sklearn.model_selection import TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyClassifier
+from sklearn.neural_network import MLPClassifier
 import matplotlib.pyplot as plt
 from graphviz import Source
 from datetime import datetime
@@ -35,6 +36,21 @@ def get_dummy_classifier_pipeline(cur_strategy):
 
     return dummy_pipeline
 
+
+def get_MLP_classifier_pipeline():
+    """
+    MLP Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier
+    """
+
+    clf = MLPClassifier()
+
+    MLP_transformer = ColumnTransformer(transformers=[('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
+        sparse=False, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS), ('Standardization For Interval Data', StandardScaler(), config.NUMERICAL_COLUMNS)],  remainder='passthrough')
+
+    MLP_pipeline = Pipeline(steps=[('Column Transformer', MLP_transformer),
+                                     ('Classifier', clf)])
+
+    return MLP_pipeline
 
 def get_KNN_classifier_pipeline():
     """
@@ -204,11 +220,7 @@ if __name__ == "__main__":
                           'Classifier__n_iter_no_change': [5, 10]}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
-    #algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
-    #algorithm_param_combinations = [(logit_params, logit_pipeline, 'logit')]
-    algorithm_param_combinations = [(DT_params, DT_pipeline, 'DTree')]
-    #algorithm_param_combinations = [(KNN_params, KNN_pipeline, 'KNN')]
-    #algorithm_param_combinations = [(perceptron_params, perceptron_pipeline, 'perceptron')]
+    algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
 
     ####### HYPER-PARAMETER TUNING SETUP STOP ########
 
@@ -216,13 +228,13 @@ if __name__ == "__main__":
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     if config.IS_TIME_SERIES:
-        cv_procedure = TimeSeriesSplit(n_splits=10)
+        cv_procedure = TimeSeriesSplit(n_splits=config.K)
     else:
         #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-        cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+        #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
         
         #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-        #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+        cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
         # cv_procedure = RepeatedKFold(
         #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
@@ -231,11 +243,35 @@ if __name__ == "__main__":
 
     ####### SPECIFIC CLASSIFIER SETUP START #######
     #Setup the classifier specific parameters for the learning and validation curves
+    #NOTE: For each class the param_range varable is only used to setup a range for the validation curve to explore.
     print("Setting up the {} classifier...".format(
         config.CUR_CLASSIFIER))
     if config.CUR_CLASSIFIER == config.DUMMY:
         cur_pipe = get_dummy_classifier_pipeline("prior")
         cur_pipe_name = config.DUMMY
+
+    elif config.CUR_CLASSIFIER == config.MLP:
+        cur_pipe = get_MLP_classifier_pipeline()
+        cur_pipe_name = config.MLP
+        cur_pipe.set_params(Classifier__hidden_layer_sizes=(100,),
+                            Classifier__activation='relu',
+                            Classifier__solver='adam',
+                            Classifier__alpha=0.0001, #L2 regularization parameter
+                            Classifier__batch_size='auto',
+                            Classifier__learning_rate='adaptive',
+                            Classifier__learning_rate_init=0.001,
+                            Classifier__power_t=0.5, #Only used for invscaling option of learning_rate
+                            Classifier__momentum=0.9, #Only used for SGD
+                            Classifier__nesterovs_momentum=True, #Only used for SGD and momentum > 0
+                            Classifier__beta_1=0.9, #Both betas are paramters for the Adam solver
+                            Classifier__beta_2=0.999,
+                            Classifier__epsilon=1e-8, #Adam numerical stability constant
+                            Classifier__max_iter=200,
+                            Classifier__early_stopping=True,
+                            Classifier__verbose=False,
+                            Classifier__shuffle=True)
+        param_name = 'Classifier__alpha'
+        param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline()
@@ -406,7 +442,7 @@ if __name__ == "__main__":
 
 
     ######### LEARNING AND VALIDATION CURVES START ###########
-    #Plots training and validation set scores over after training over different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+    #Plots training and validation set scores for training with different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
     print('learning curve shape')
     print(X_train.shape)
     if config.PLOT_LEARNING_CURVES:
@@ -429,7 +465,18 @@ if __name__ == "__main__":
     ########## LEARNING AND VALIDATION CURVES STOP ###########
 
 
-    ######## CONFUSION MATRIX START ########
+    ######### CROSS VALIDATION SINGLE PARAMETER SETTING START ##########
+    if config.CROSS_VALIDATE:
+        print("Cross validating {} classifier...".format(config.CUR_CLASSIFIER))
+        cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=True)
+        print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+        print("Cross Validation Dev set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['test_score']), np.std(cross_val_results['test_score'])))
+
+    ########### CROSS VALIDATION SINGLE PARAMETER SETTING STOP ##########
+
+
+
+    ######## CROSS VAL CONFUSION MATRIX START ########
     #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
     display_labels = np.array(config.CLASSES)
     cmap = 'viridis'
@@ -437,11 +484,11 @@ if __name__ == "__main__":
     xticks_rotation = 'horizontal'
     values_format = None
     include_values = True
-    if config.COMPUTE_CONFUSION_MATRIX:
+    if config.COMPUTE_CROSS_VAL_CONFUSION_MATRIX:
         """"
         Since the plot_confusion_matrix function actually generates its own predictions based on the X value passed in, passing in the training set would not provide predictions of the folds used in cross-validation
         #So we get the values predicted during cross validation and get the confusion matrix from that
-        #NOTE: This does not average the confusion matrix score across each train/validate split, but instead just reports the total score across ALL predictions made.
+        #NOTE: This does not average the confusion matrix score across each fold, but instead just reports the total score across ALL predictions made, irrespective of which fold the prediction was made in.
         See for more detail: See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
         """
         print("Computing the confusion matrix for {} classifier".format(config.CUR_CLASSIFIER))
@@ -459,7 +506,7 @@ if __name__ == "__main__":
         print("True Negative Rate: {}".format(tn))
         print("False Negative Rate: {}".format(fn))
 
-        #We need to bypass the predictions made i nthe plot_confusion_matrix function so we create the confusion matrix display directly. See https://github.com/scikit-learn/scikit-learn/blob/95d4f0841/sklearn/metrics/_plot/confusion_matrix.py#L119
+        #We need to bypass the predictions made in the plot_confusion_matrix function so we create the confusion matrix display directly. See https://github.com/scikit-learn/scikit-learn/blob/95d4f0841/sklearn/metrics/_plot/confusion_matrix.py#L119
         disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix,
                                       display_labels=display_labels)
         disp.plot(include_values=include_values,
@@ -467,7 +514,7 @@ if __name__ == "__main__":
                      values_format=values_format)
         plt.show()
 
-    ######### CONFUSION MATRIX STOP ##########
+    ######### CROSS VALCONFUSION MATRIX STOP ##########
 
 
     ####### CROSS TRAIN START #######

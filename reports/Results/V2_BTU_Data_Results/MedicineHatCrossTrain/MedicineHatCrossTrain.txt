@@ -3,3 +3,6 @@ Cross Test generalization score 0.981167680079294
 
 KNN
 Cross Test generalization score 0.9677677601357147
+
+MLP
+Cross Test generalization score 0.9734479537960086

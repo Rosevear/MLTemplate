@@ -135,6 +135,10 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
 
     train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
 
+
+    if config.IS_TIME_SERIES:
+        pass
+
     train_scores_mean = np.mean(train_scores, axis=1)
     train_scores_std = np.std(train_scores, axis=1)
     test_scores_mean = np.mean(test_scores, axis=1)

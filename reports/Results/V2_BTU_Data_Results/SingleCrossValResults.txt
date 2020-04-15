@@ -1,0 +1,3 @@
+Cross validating MLP classifier...
+Cross Validation Training set results. Mean: 0.9721637148227572 Standard Deviation: 0.005263772798302334
+Cross Validation Dev set results. Mean: 0.954867762687634 Standard Deviation: 0.003367589981016677
