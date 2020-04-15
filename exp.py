@@ -98,8 +98,8 @@ if __name__ == "__main__":
     
     logger = utils.setup_logger()
 
-    print("Loading processed data for the experiment...")
     data_source = config.PROCESSED_DATA_DIR / config.CUR_DATA_FILE
+    print("Loading processed data for the experiment from {}".format(data_source))
     data = utils.load_csv(data_source, logger)
 
     #Extract the data set targets as their own column and remove from the original dataset
@@ -149,6 +149,9 @@ if __name__ == "__main__":
         y_train = shuffle(y_train)
         print("first 10 rows of targets shuffled...")
         print(y_train[0:10])
+
+        #Shuffle the original data-set for when cross-training
+        targets = shuffle(targets)
 
     #Display some of the data as a sanity check that it is in the desired format
     if config.VERBOSITY >= 2:
@@ -448,22 +451,27 @@ if __name__ == "__main__":
 
     ####### CROSS TRAIN START #######
     if config.IS_CROSS_TRAIN:
-        print("Loading the cross-testing data...")
-        cross_data_source = config.PROCESSED_DATA_DIR / config.CUR_DATA_FILE / config.CROSS_TEST_FILE
+        cross_data_source = config.PROCESSED_DATA_DIR / config.CROSS_TEST_FILE
+        print("Loading the cross-testing data from {}".format(cross_data_source))
         cross_data = utils.load_csv(data_source, logger)
         cross_targets = cross_data[config.TARGET_COLUMN_NAME]
         del cross_data[config.TARGET_COLUMN_NAME]
 
+        print("Displaying the columns of the cross-data...")
+        print(list(cross_data))
+
         cur_pipe.fit(data, targets)
         cross_test_score = cur_pipe.score(cross_data, cross_targets)
         print("Cross Test generalization score {}".format(cross_test_score))
-
         
-
-    ###### CROSS TRAIN STOP ######
+        print("Plotting the confusion matrix for the cross-test ...")
+        plot_confusion_matrix(estimator=cur_pipe, X=cross_data, y_true=cross_targets, labels=display_labels, normalize='all',
+                              include_values=include_values, cmap=cmap, ax=ax, xticks_rotation=xticks_rotation, values_format=values_format)
+        plt.show()
+    ####### CROSS TRAIN STOP ######
         
     ######### GENERALIZATION TEST START #########
-    #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think. This next step is to get an unbiased estimate of the models performance on unseen data
+    #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think we can get. This next step is to get an unbiased estimate of the models performance on unseen data
     if config.EVALUATE_TEST_SET:
         print("Training and testing the generalization score for accuracy...")
         cur_pipe.fit(X_train, y_train)

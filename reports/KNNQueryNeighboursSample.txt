@@ -306,19 +306,26 @@ Neighbours 9
 
   To the extent that we can rely on the data distribution behaving similarly into
   the future, where there are lots of essentially 'repeat' failures that occur
-  on different days this is not a problem, with the following 2 caveats:
+  on different days this is not a problem, with the following 3 caveats:
 
-  1. The algorithm will likely perform poorly on new data until it has had a
+  1. Some of the data points seem to have identical dates? We need to review 
+  those and make sure that they are not instances of bad data, adn if they are, 
+  we may need t find out how common they are to make sure that they are not 
+  artificially boosting the score.
+  
+  2. The algorithm will likely perform poorly on new data until it has had a
   chance to get acquainted with the exceptions that appear to be re-occurring.
   It will in essence require a 'ramp up' period whenever the types of exceptions
-  that are occurring over a given time period start to drift.
+  that are occurring over a given time period start to drift. We may be able to address
+  this by having periodic re-training sessions to account for new data coming in.
+  Exactly how often this should happen is an empirical question, I think.
 
-  2. As a corollary of the above, it seems unlikely that the model will perform
-  well on even reasonably novel VEE exceptions, since it will have not encountered
-  them before and is not building a robust parametric model that generalizes well.
+  3. As a corollary of the above, it seems unlikely that the model will perform
+  well on even reasonably novel singular VEE exceptions, since it will have not encountered
+  them before and is not building a robust parametric model that generalizes well. So any
+  one-off exceptions will likely be more susceptible to being misclassified.
 
-We may need to add more discriminating features and/or use a different model on a data
-set with less similarity to get a better sense of how it handles novel VEE exceptions.
-Training on a train-test split that respects temporal restrictions may be one way to
-test such generalizability, assuming that the data set exhibits some of the drift described
-above.
+  In order to address 2, if it turns out to be a problem, we may need to explore some or all of the following.
+    1. Better more discriminatory features
+    2. Data sets with more variety
+    3. Better models
