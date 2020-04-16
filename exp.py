@@ -145,12 +145,11 @@ if __name__ == "__main__":
         shuffle_data = False
         stratify_by = None
         #Training sizes used by the learning curve plot in absolute terms
-        # train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663,
-        #                24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773]) 
+        train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773, 41970]) 
     else:
         shuffle_data = True
         stratify_by = targets
-        #train_sizes = np.arange(0.05, 1.05, 0.05)
+        train_sizes = np.arange(0.05, 1.05, 0.05)
     
     #Visual check on the data format
     print("Displaying the columns of the data...")
@@ -231,10 +230,10 @@ if __name__ == "__main__":
         cv_procedure = TimeSeriesSplit(n_splits=config.K)
     else:
         #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-        #cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+        cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
         
         #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-        cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+        #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
 
         # cv_procedure = RepeatedKFold(
         #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
@@ -447,7 +446,6 @@ if __name__ == "__main__":
     print(X_train.shape)
     if config.PLOT_LEARNING_CURVES:
         print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
-        train_sizes = np.arange(0.05, 1.05, 0.05)
         learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
         learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train,
                                                     y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)

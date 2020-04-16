@@ -20,7 +20,7 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 
-CUR_CLASSIFIER = KNN
+CUR_CLASSIFIER = DT
 
 ############### EXPERIMENT CONFIG ###############
 TRAINING_SET_SIZE = 0.80
@@ -32,21 +32,31 @@ METRIC_LIST = ['accuracy']
 VERBOSITY = 1
 
 
-# Whether or not we want to train on a specific set of parameters in order to analyze the learning method of an algorithm
+# Whether or not to run some specific analysis of the current classifier regarding how it learns
 ANALYZE_LEARNING = False
+
+#Whether or not to use GridSearchCV to find the best hyperparameters
 TUNE_HYPER_PARAMETERS = False
-PLOT_LEARNING_CURVES = True 
-PLOT_VALIDATION_CURVES = True
+
+#Whether to plot a learning curve to display how the algorithm fares given more training data
+PLOT_LEARNING_CURVES = True
+
+#Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
+PLOT_VALIDATION_CURVES = False
+
+#Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
-CROSS_VALIDATE = True
+
+#Whether or not to report a single cross validation score for a given set of parameters
+CROSS_VALIDATE = False
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
 EVALUATE_TEST_SET = False
 
-#Whether or not to return the training scores during gridSearchCV
+#Whether or not to return the training scores used during learning
 RETURN_TRAIN_SCORES = True
 
-#Shuffle the targets of the training set in order to test if the algorithm is still getting some type of signal (probably a sign of data leakage)
+#Shuffle the targets of the training set in order to test if the algorithm is still getting some type of signal (probably a sign of data leakage if it is)
 SHUFFLE_TARGETS = False
 
 #Whether or not the data should be treated as time series for the purposes of splitting and evaluation
@@ -54,7 +64,7 @@ IS_TIME_SERIES = True
 TIME_SERIES_COLUMN = 'Date'
 
 #Set whether or not the algorithm should be trained on one data set and tested on another
-IS_CROSS_TRAIN = True
+IS_CROSS_TRAIN = False
 
 ####### LOGGING CONFIG######
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

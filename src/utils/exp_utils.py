@@ -3,7 +3,7 @@ import config
 import numpy as np
 import pandas as pd
 import logging
-from sklearn.model_selection import learning_curve, validation_curve
+from sklearn.model_selection import learning_curve, validation_curve, cross_validate
 import matplotlib.pyplot as plt
 
 def freeze_random_generators(random_seed):
@@ -132,12 +132,35 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     axes[0].set_xlabel("Training examples")
     axes[0].set_ylabel("Score: {}".format(scoring))
 
-
-    train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
-
-
     if config.IS_TIME_SERIES:
-        pass
+        #The TimeSeriesSplit object does not appear to play nicely with the learning_curve function, as it does not make use of all of the data available for some reason. So w get the cross val scores manually
+        print(train_sizes)
+        train_scores = np.empty((len(train_sizes), config.K))
+        test_scores = np.empty((len(train_sizes), config.K))
+        fit_times = np.empty((len(train_sizes), config.K))
+        
+        #Convert to numpy arrays for ease of indexing
+        # X = X.to_numpy()
+        # y = y.to_numpy()
+        
+        print('shapes')
+        print(X.shape)
+        print(y.shape)
+        
+        for i in range(len(train_sizes)):
+            cur_train_size = train_sizes[i]
+            cur_train_data = X.iloc[0:cur_train_size + 1, :]
+            cur_train_targets = y.iloc[0:cur_train_size + 1]
+            cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
+            train_scores[i: i + 1, :] = cross_val_results['train_score']
+            test_scores[i: i + 1, :] = cross_val_results['test_score']
+            fit_times[i: i + 1, :] = cross_val_results['fit_time']
+            
+    else:
+        train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
+
+    print('train scores in learning curve')
+    print(test_scores)
 
     train_scores_mean = np.mean(train_scores, axis=1)
     train_scores_std = np.std(train_scores, axis=1)
