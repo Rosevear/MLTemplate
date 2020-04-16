@@ -355,10 +355,6 @@ if __name__ == "__main__":
                     print("Query Points Data Frame format")
                     print(sample_training_data_df)
 
-                    # print("Value at original data frame")
-                    # first_randomly_selected_index = sample_training_data_indices[0]
-                    # print(X_train.iloc[[first_randomly_selected_index]])
-
                     #Transform the sample data via the pipeline to encode it properly for use by the algorithm
                     transformed_sample_data = knn_transformer.transform(
                         sample_training_data_df)

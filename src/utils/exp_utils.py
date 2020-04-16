@@ -139,14 +139,6 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
         test_scores = np.empty((len(train_sizes), config.K))
         fit_times = np.empty((len(train_sizes), config.K))
         
-        #Convert to numpy arrays for ease of indexing
-        # X = X.to_numpy()
-        # y = y.to_numpy()
-        
-        print('shapes')
-        print(X.shape)
-        print(y.shape)
-        
         for i in range(len(train_sizes)):
             cur_train_size = train_sizes[i]
             cur_train_data = X.iloc[0:cur_train_size + 1, :]
