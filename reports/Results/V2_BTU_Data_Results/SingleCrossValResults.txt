@@ -1,3 +1,11 @@
+Cross validating DT classifier...
+Cross Validation Training set results. Mean: 0.9892184893971886 Standard Deviation: 0.004561305206408115
+Cross Validation Dev set results. Mean: 0.962354062425542 Standard Deviation: 0.0014606273170354143
+
+Cross validating KNN classifier...
+Cross Validation Training set results. Mean: 0.9612223016440314 Standard Deviation: 0.0005748076283924188
+Cross Validation Dev set results. Mean: 0.9424827257564927 Standard Deviation: 0.0009160058511670924
+
 Cross validating MLP classifier...
 Cross Validation Training set results. Mean: 0.9721637148227572 Standard Deviation: 0.005263772798302334
 Cross Validation Dev set results. Mean: 0.954867762687634 Standard Deviation: 0.003367589981016677

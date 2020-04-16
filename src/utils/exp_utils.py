@@ -133,8 +133,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     axes[0].set_ylabel("Score: {}".format(scoring))
 
     if config.IS_TIME_SERIES:
-        #The TimeSeriesSplit object does not appear to play nicely with the learning_curve function, as it does not make use of all of the data available for some reason. So w get the cross val scores manually
-        print(train_sizes)
+        #The TimeSeriesSplit object does not appear to play nicely with the learning_curve function, as it does not make use of all of the data available for some reason. So we get the cross val scores manually
         train_scores = np.empty((len(train_sizes), config.K))
         test_scores = np.empty((len(train_sizes), config.K))
         fit_times = np.empty((len(train_sizes), config.K))
@@ -142,6 +141,14 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
         for i in range(len(train_sizes)):
             cur_train_size = train_sizes[i]
             cur_train_data = X.iloc[0:cur_train_size + 1, :]
+            
+            if config.VERBOSITY >= 1:
+                print("Current subsection of data to split via time series for the learning curve...")
+                print(cur_train_data)
+                print('Time Series Split indices for the current subsection of data...')
+                for train, test in cv.split(cur_train_data):
+                    print("Train indices: {} Test indices: {}".format(train, test))
+            
             cur_train_targets = y.iloc[0:cur_train_size + 1]
             cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
             train_scores[i: i + 1, :] = cross_val_results['train_score']
@@ -150,9 +157,6 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             
     else:
         train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
-
-    print('train scores in learning curve')
-    print(test_scores)
 
     train_scores_mean = np.mean(train_scores, axis=1)
     train_scores_std = np.std(train_scores, axis=1)

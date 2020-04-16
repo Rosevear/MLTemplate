@@ -20,16 +20,16 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 
-CUR_CLASSIFIER = DT
+CUR_CLASSIFIER = MLP
 
 ############### EXPERIMENT CONFIG ###############
 TRAINING_SET_SIZE = 0.80
 RANDOM_SEED = 0
-K = 10  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
+K = 3  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 REPEATS = 5  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
-VERBOSITY = 1
+VERBOSITY = 0
 
 
 # Whether or not to run some specific analysis of the current classifier regarding how it learns
@@ -42,13 +42,13 @@ TUNE_HYPER_PARAMETERS = False
 PLOT_LEARNING_CURVES = True
 
 #Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
-PLOT_VALIDATION_CURVES = False
+PLOT_VALIDATION_CURVES = True
 
 #Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
 
 #Whether or not to report a single cross validation score for a given set of parameters
-CROSS_VALIDATE = False
+CROSS_VALIDATE = True
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
 EVALUATE_TEST_SET = False

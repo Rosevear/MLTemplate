@@ -145,7 +145,8 @@ if __name__ == "__main__":
         shuffle_data = False
         stratify_by = None
         #Training sizes used by the learning curve plot in absolute terms
-        train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773, 41970]) 
+        train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773, 41970])
+        #train_sizes = np.array([15, 20, 25, 30, 35]) 
     else:
         shuffle_data = True
         stratify_by = targets
@@ -185,7 +186,7 @@ if __name__ == "__main__":
         targets = shuffle(targets)
 
     #Display some of the data as a sanity check that it is in the desired format
-    if config.VERBOSITY >= 2:
+    if config.VERBOSITY >= 1:
         KNN_transformer = get_KNN_classifier_pipeline().named_steps['Column Transformer']
         data_sample = data[0:3]
         data_sample = KNN_transformer.fit_transform(data_sample)
@@ -438,8 +439,6 @@ if __name__ == "__main__":
 
     ######### LEARNING AND VALIDATION CURVES START ###########
     #Plots training and validation set scores for training with different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
-    print('learning curve shape')
-    print(X_train.shape)
     if config.PLOT_LEARNING_CURVES:
         print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
         learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
