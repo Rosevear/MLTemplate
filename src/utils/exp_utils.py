@@ -63,6 +63,50 @@ def log_message(logger, msg):
 
     #TODO:
 
+#NOTE: Code sourced from here and modified: https://hub.packtpub.com/cross-validation-strategies-for-time-series-forecasting-tutorial/
+class SlidingWindowTimeSeriesSplit():
+    """
+    Constructs a sliding window of folds from the data that respects its original ordering, with each fold being broken down into a 80/20 train-test split.
+
+    For example, for a provided training set with 100 samples the output will be as follows:
+
+    Train Indices[0 1 2 3 4 5 6 7] Test indices: [8 9]
+    Train indices: [10 11 12 13 14 15 16 17] Test indices: [18 19]
+    Train indices: [20 21 22 23 24 25 26 27] Test indices: [28 29]
+    Train indices: [30 31 32 33 34 35 36 37] Test indices: [38 39]
+    Train indices: [40 41 42 43 44 45 46 47] Test indices: [48 49]
+    Train indices: [50 51 52 53 54 55 56 57] Test indices: [58 59]
+    Train indices: [60 61 62 63 64 65 66 67] Test indices: [68 69]
+    Train indices: [70 71 72 73 74 75 76 77] Test indices: [78 79]
+    Train indices: [80 81 82 83 84 85 86 87] Test indices: [88 89]
+    Train indices: [90 91 92 93 94 95 96 97] Test indices: [98 99]
+    """
+
+    def __init__(self, n_splits):
+        self.n_splits = n_splits
+
+    def get_n_splits(self, X, y, groups):
+        return self.n_splits
+
+    def split(self, X, y=None, groups=None):
+
+        n_folds = self.n_splits + 1
+        n_samples = len(X)
+        k_fold_size = n_samples // self.n_splits
+        indices = np.arange(n_samples)
+
+        if n_folds > n_samples:
+            raise ValueError(
+                ("Cannot have number of folds ={0} greater"
+                 " than the number of samples: {1}.").format(n_folds,
+                                                             n_samples))
+
+        for i in range(self.n_splits):
+            start = i * k_fold_size
+            stop = start + k_fold_size
+            mid = int(0.8 * (stop - start)) + start
+            yield indices[start: mid], indices[mid: stop]
+
 #NOTE: This code has been modified from its original from after taken from here: https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
 def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, cv, n_jobs, verbose=1, axes=None, ylim=None):
 
@@ -132,7 +176,8 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     axes[0].set_xlabel("Training examples")
     axes[0].set_ylabel("Score: {}".format(scoring))
 
-    if config.IS_TIME_SERIES:
+    # See the following for a visual description of the difference between expanding and sliding window validation for time-series data: https://stats.stackexchange.com/a/326247/176281
+    if config.IS_TIME_SERIES and False:
         #The TimeSeriesSplit object does not appear to play nicely with the learning_curve function, as it does not make use of all of the data available for some reason. So we get the cross val scores manually
         train_scores = np.empty((len(train_sizes), config.K))
         test_scores = np.empty((len(train_sizes), config.K))
@@ -142,12 +187,12 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             cur_train_size = train_sizes[i]
             cur_train_data = X.iloc[0:cur_train_size + 1, :]
             
-            if config.VERBOSITY >= 1:
-                print("Current subsection of data to split via time series for the learning curve...")
-                print(cur_train_data)
-                print('Time Series Split indices for the current subsection of data...')
-                for train, test in cv.split(cur_train_data):
-                    print("Train indices: {} Test indices: {}".format(train, test))
+            # if config.VERBOSE:
+            #     print("Current subsection of data to split for expanding window validation...")
+            #     print(cur_train_data)
+            #     print('Time Series expanding window split indices for the current subsection of data...')
+            #     for train, test in cv.split(cur_train_data):
+            #         print("Train indices: {} Test indices: {}".format(train, test))
             
             cur_train_targets = y.iloc[0:cur_train_size + 1]
             cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
@@ -156,6 +201,25 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             fit_times[i: i + 1, :] = cross_val_results['fit_time']
             
     else:
+        
+        cv_iter = list(cv.split(X.iloc[0:100, :], y.iloc[0:100], None))
+        #cv_iter = list(cv.split(X, y, None))
+        print('cv iter')
+        print(cv_iter)
+        print('cv iter at 0')
+        print(cv_iter[0])
+        print('next iter')
+        print(cv_iter[1])
+
+        print('max trainin size')
+        print(len(cv_iter[0][0]))
+        print('test size')
+        print(len(cv_iter[0][1]))
+    
+        print('x shape')
+        print(X.shape)
+        exit()
+
         train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
 
     train_scores_mean = np.mean(train_scores, axis=1)

@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn.utils import shuffle
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
-from sklearn.model_selection import TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, cross_validate
+from sklearn.model_selection import KFold, TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyClassifier
 from sklearn.neural_network import MLPClassifier
@@ -139,18 +139,20 @@ if __name__ == "__main__":
     del data[config.TARGET_COLUMN_NAME]
 
     if config.IS_TIME_SERIES:
-        # Remove the date column used only for sorting the data by date
+        # Remove the date column used only for sorting the data
         del data[config.TIME_SERIES_COLUMN]
-        # We want the test set to be the last 20% of the data, so no shuffling
+        # We want the test set to remain temporally ordered, so no shuffling
         shuffle_data = False
         stratify_by = None
-        #Training sizes used by the learning curve plot in absolute terms
-        train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773, 41970])
-        #train_sizes = np.array([15, 20, 25, 30, 35]) 
+        #Training sizes used by the learning curve plot in absolute terms: sklearn's TimeSeriesSplit cv underutilizes the provided data for some reason when using percentage sizes. TODO: Look into this
+        if config.DO_EXPANDING_WINDOW_VALIDATION:
+            train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773])
+        else:
+            train_sizes = np.arange(0.05, 1.05, 0.05)
     else:
         shuffle_data = True
         stratify_by = targets
-        train_sizes = np.arange(0.05, 1.05, 0.05)
+        train_sizes = np.arange(0.05, 1.00, 0.05)
     
     #Visual check on the data format
     print("Displaying the columns of the data...")
@@ -186,7 +188,7 @@ if __name__ == "__main__":
         targets = shuffle(targets)
 
     #Display some of the data as a sanity check that it is in the desired format
-    if config.VERBOSITY >= 1:
+    if config.VERBOSE:
         KNN_transformer = get_KNN_classifier_pipeline().named_steps['Column Transformer']
         data_sample = data[0:3]
         data_sample = KNN_transformer.fit_transform(data_sample)
@@ -228,7 +230,13 @@ if __name__ == "__main__":
     ####### CV SETUP START ###########
     #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
     if config.IS_TIME_SERIES:
-        cv_procedure = TimeSeriesSplit(n_splits=config.K)
+        if config.DO_EXPANDING_WINDOW_VALIDATION:
+            #The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
+            cv_procedure = TimeSeriesSplit(n_splits=config.K)
+        else:
+            #A custom class. See docstring in exp_utils.py for more detail
+            cv_procedure = utils.SlidingWindowTimeSeriesSplit(n_splits=config.K)
+            
     else:
         #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
         cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
@@ -238,6 +246,14 @@ if __name__ == "__main__":
 
         # cv_procedure = RepeatedKFold(
         #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+
+    #train_test_splits = []
+    if config.VERBOSE:
+        print(
+            'Current train test cross-validation split for the training data (using the first 100 row of data as an example of the split) ...')
+        for train, test in cv_procedure.split(X_train.iloc[0:100, :], y_train.iloc[0:100]):
+                    print("Train indices: {} Test indices: {}".format(
+                        train, test))
 
     ###### CV SETUP STOP #######
 
@@ -317,7 +333,7 @@ if __name__ == "__main__":
                 cur_pipe.fit(X_train, y_train)
 
                 if config.CUR_CLASSIFIER == config.DT:
-                    print("Analyzing the Decison Tree algorithm...")
+                    print("Analyzing the Decision Tree algorithm...")
                     estimator = cur_pipe.named_steps['Classifier']
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
@@ -394,7 +410,7 @@ if __name__ == "__main__":
             print("Optimizing classifiers for {} ".format(score))
             gridcvs = {}
 
-            if config.VERBOSITY >= 2:
+            if config.VERBOSE:
                 print("Indices used for k fold cross validation")
                 for train_index, test_index in cv_procedure.split(X_train, y_train):
                     print("TRAIN:", train_index, "TEST:", test_index)
