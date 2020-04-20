@@ -1,0 +1,27 @@
+
+K = 10
+
+Cross validating DT classifier...
+Cross Validation Training set results. Mean: 0.9983616324098896 Standard Deviation: 0.002804710424749814
+Cross Validation Dev set results. Mean: 0.9111904761904762 Standard Deviation: 0.08793614979011363
+
+Cross validating KNN classifier...
+Cross Validation Training set results. Mean: 0.9719392314566578 Standard Deviation: 0.009566515966240833
+Cross Validation Dev set results. Mean: 0.8982142857142857 Standard Deviation: 0.10299545649666744
+
+Cross validating MLP classifier...
+Cross Validation Training set results. Mean: 0.9694667858206734 Standard Deviation: 0.024921869440025512
+Cross Validation Dev set results. Mean: 0.9339285714285713 Standard Deviation: 0.07771037936610843
+
+K = 5
+Cross validating KNN classifier...
+Cross Validation Training set results. Mean: 0.9713775130305287 Standard Deviation: 0.007426571781605433
+Cross Validation Dev set results. Mean: 0.8793329362715901 Standard Deviation: 0.09030613975758396
+
+Cross validating DT classifier...
+Cross Validation Training set results. Mean: 0.9976470588235292 Standard Deviation: 0.0012258594565752179
+Cross Validation Dev set results. Mean: 0.9561643835616438 Standard Deviation: 0.039036722968990814
+
+Cross validating MLP classifier...
+Cross Validation Training set results. Mean: 0.9713179448994789 Standard Deviation: 0.025055746653801288
+Cross Validation Dev set results. Mean: 0.9435378201310304 Standard Deviation: 0.04193479583767019

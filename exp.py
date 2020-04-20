@@ -16,6 +16,7 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 from sklearn.model_selection import KFold, TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyClassifier
+from sklearn.calibration import calibration_curve, CalibratedClassifierCV
 from sklearn.neural_network import MLPClassifier
 import matplotlib.pyplot as plt
 from graphviz import Source
@@ -160,7 +161,7 @@ if __name__ == "__main__":
     print("Displaying the first few rows of the data...")
     print(data.head(10))
     
-    print("Splitting the training data...")
+    print("Splitting the whole data set into a training set and a heldout test set...")
     X_train, X_test, y_train, y_test = train_test_split(data, targets,
                                                         train_size=config.TRAINING_SET_SIZE,
                                                         random_state=config.RANDOM_SEED,
@@ -172,8 +173,8 @@ if __name__ == "__main__":
     print("y_test data dimensions (row, column): {}".format(y_test.shape))
     num_samples = X_train.shape[0]
     num_features = X_train.shape[1]
-    
-    
+
+
     #Check that the accepted and rejected training targets are roughly equally balanced
     target_series = pd.Series(y_train)
     print('training set target counts \n {}'.format(target_series.value_counts()))
@@ -200,15 +201,20 @@ if __name__ == "__main__":
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
     KNN_pipeline = get_KNN_classifier_pipeline()
     KNN_params = [{'Classifier__n_neighbors': list(range(5, 6)),
-                    'Classifier__p': [2]}] 
+                    'Classifier__p': [2],''
+                    'Classifier__random_state': config.RANDOM_SEED
+                    }] 
     
     DT_pipeline = get_DT_classifier_pipeline()
     DT_params = [{'Classifier__max_depth': list(range(1, 21)),
-                    'Classifier__criterion': ['gini']}]
+                    'Classifier__criterion': ['gini'],
+                    'Classifier__random_state': config.RANDOM_SEED
+                    }]
 
     logit_pipeline = get_logit_classifier_pipeline()
     logit_params = [{'Classifier__penalty': ['l2'],
-                    'Classifier__C': np.power(10., np.arange(1))}]
+                    'Classifier__C': np.power(10., np.arange(1)),
+                     'Classifier__random_state': config.RANDOM_SEED}]
 
     perceptron_pipeline = get_perceptron_classifier_pipeline()
     perceptron_params = [{'Classifier__penalty': ['l1', 'l2'],
@@ -219,7 +225,8 @@ if __name__ == "__main__":
                           'Classifier__early_stopping': [True],
                           'Classifier__validation_fraction': [0.1],
                           'Classifier__shuffle': [True],
-                          'Classifier__n_iter_no_change': [5, 10]}]
+                          'Classifier__n_iter_no_change': [5, 10],
+                          'Classifier__random_state': config.RANDOM_SEED}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
     algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
@@ -285,21 +292,25 @@ if __name__ == "__main__":
                             Classifier__max_iter=200,
                             Classifier__early_stopping=True,
                             Classifier__verbose=False,
-                            Classifier__shuffle=True)
+                            Classifier__shuffle=True,
+                            Classifier__random_state=config.RANDOM_SEED)
         param_name = 'Classifier__alpha'
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline()
         cur_pipe_name = config.KNN
-        cur_pipe.set_params(Classifier__n_neighbors=5)
+        cur_pipe.set_params(Classifier__n_neighbors=5,
+                            Classifier__random_state=config.RANDOM_SEED)
         param_name = 'Classifier__n_neighbors'
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline()
         cur_pipe_name = config.DT
-        cur_pipe.set_params(Classifier__max_depth=20)
+        cur_pipe.set_params(Classifier__max_depth=20,
+                            Classifier__random_state=config.RANDOM_SEED
+        )
         param_name = 'Classifier__max_depth'
         param_range = np.arange(1, 51)
 
@@ -314,7 +325,9 @@ if __name__ == "__main__":
                             Classifier__eta0=1,
                             Classifier__early_stopping=True,
                             Classifier__validation_fraction=0.1,
-                            Classifier__n_iter_no_change=5)
+                            Classifier__n_iter_no_change=5,
+                            Classifier__random_state=config.RANDOM_SEED
+                            )
 
         param_name = 'Classifier__max_iter'
         param_range = np.arange(500, 10000, 500)
@@ -472,6 +485,37 @@ if __name__ == "__main__":
         validation_plot.show()
 
     ########## LEARNING AND VALIDATION CURVES STOP ###########
+
+
+    ########## CALIBRATION START ############
+
+    if config.PREDICT_PROBABILITY:
+        print(
+            "Splitting the training data into a training set and a held out calibration set ...")
+        X_calibration_train, X_calibration_test, y_calibration_train, y_calibration_test = train_test_split(X_train, y_train,
+                                                                                                            train_size=config.TRAINING_SET_SIZE,
+                                                                                                            random_state=config.RANDOM_SEED,
+                                                                                                            shuffle=shuffle_data,
+                                                                                                            stratify=stratify_by)
+        print("X_calibration_train dimensions (row, column): {}".format(
+            X_calibration_train.shape))
+        print("X_calibration_test data dimensions (row, column): {}".format(
+            X_calibration_test.shape))
+        print("y_calibration_train data dimensions (row, column): {}".format(
+            y_calibration_train.shape))
+        print("y_calibration_test data dimensions (row, column): {}".format(
+            y_calibration_test.shape))
+        num_calibration_train_samples = X_calibration_train.shape[0]
+
+        cur_pipe_calibrator = CalibratedClassifierCV(cur_pipe, 'isotonic', cv=cv_procedure)
+        print("Calibrating the probabilities for {} classifier".format(
+            config.CUR_CLASSIFIER))
+        print(X_calibration_train)
+        cur_pipe_calibrator.fit(X_calibration_train, y_calibration_train)
+        cur_pipe_calibrator.predict(X_calibration_test)
+        cur_pipe_calibrator.predict_proba(X_calibration_test)
+        cur_pipe_calibrator.score(X_calibration_test, y_calibration_test)
+    ########## CALIBRATION STOP #############
 
 
     ######### CROSS VALIDATION SINGLE PARAMETER SETTING START ##########
