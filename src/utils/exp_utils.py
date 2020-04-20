@@ -104,7 +104,7 @@ class SlidingWindowTimeSeriesSplit():
         for i in range(self.n_splits):
             start = i * k_fold_size
             stop = start + k_fold_size
-            mid = int(0.8 * (stop - start)) + start
+            mid = int(config.TRAINING_SET_SIZE * (stop - start)) + start
             yield indices[start: mid], indices[mid: stop]
 
 #NOTE: This code has been modified from its original from after taken from here: https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
@@ -177,8 +177,14 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
     axes[0].set_ylabel("Score: {}".format(scoring))
 
     # See the following for a visual description of the difference between expanding and sliding window validation for time-series data: https://stats.stackexchange.com/a/326247/176281
-    if config.IS_TIME_SERIES and False:
-        #The TimeSeriesSplit object does not appear to play nicely with the learning_curve function, as it does not make use of all of the data available for some reason. So we get the cross val scores manually
+    if config.IS_TIME_SERIES and config.DO_EXPANDING_WINDOW_VALIDATION:
+        """
+        NOTE: The TimeSeriesSplit object does not appear to play nicely with the learning_curve function; it uses the size of the first train-test split created by TimeSeriesSplit to determine the maximum number of training examples, 
+        which results in the learning curve not making use of all of the the available data. This is likely because it expects a k-fold validator, which does not have to respect temporal ordering and can therefore always combine all 
+        of the non-test set folds in each train-test split resulting in all cross-validations being performed on training sets of the same size. In contrast, performing an expanding window validation starts of with a small training set 
+        that grows over time within the cross-validation procedure, so the learning curve plotting functions assume that the first train-test split size is representative of all of them. The code below manually sp;its up the data 
+        into different sizes and uses an expanding window validation on each data set size, up to the maximum amount of data available.
+        """
         train_scores = np.empty((len(train_sizes), config.K))
         test_scores = np.empty((len(train_sizes), config.K))
         fit_times = np.empty((len(train_sizes), config.K))
@@ -187,12 +193,10 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             cur_train_size = train_sizes[i]
             cur_train_data = X.iloc[0:cur_train_size + 1, :]
             
-            # if config.VERBOSE:
-            #     print("Current subsection of data to split for expanding window validation...")
-            #     print(cur_train_data)
-            #     print('Time Series expanding window split indices for the current subsection of data...')
-            #     for train, test in cv.split(cur_train_data):
-            #         print("Train indices: {} Test indices: {}".format(train, test))
+            if config.VERBOSE:
+                print('Time Series expanding window split indices for the current subsection of data...')
+                for train, test in cv.split(cur_train_data):
+                    print("Train indices: {} Test indices: {}".format(train, test))
             
             cur_train_targets = y.iloc[0:cur_train_size + 1]
             cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
@@ -201,25 +205,6 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             fit_times[i: i + 1, :] = cross_val_results['fit_time']
             
     else:
-        
-        cv_iter = list(cv.split(X.iloc[0:100, :], y.iloc[0:100], None))
-        #cv_iter = list(cv.split(X, y, None))
-        print('cv iter')
-        print(cv_iter)
-        print('cv iter at 0')
-        print(cv_iter[0])
-        print('next iter')
-        print(cv_iter[1])
-
-        print('max trainin size')
-        print(len(cv_iter[0][0]))
-        print('test size')
-        print(len(cv_iter[0][1]))
-    
-        print('x shape')
-        print(X.shape)
-        exit()
-
         train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
 
     train_scores_mean = np.mean(train_scores, axis=1)

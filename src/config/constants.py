@@ -20,15 +20,22 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 
-CUR_CLASSIFIER = DT
+CUR_CLASSIFIER = KNN
 
 ############### EXPERIMENT CONFIG ###############
+
 TRAINING_SET_SIZE = 0.80
+
 RANDOM_SEED = 0
-K = 10  # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
-REPEATS = 5  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
+# The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
+K = 10
+
+# The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
+REPEATS = 10  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
+
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
+
 VERBOSE = True
 
 
@@ -42,13 +49,13 @@ TUNE_HYPER_PARAMETERS = False
 PLOT_LEARNING_CURVES = True
 
 #Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
-PLOT_VALIDATION_CURVES = False
+PLOT_VALIDATION_CURVES = True
 
 #Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
 
 #Whether or not to report a single cross validation score for a given set of parameters
-CROSS_VALIDATE = False
+CROSS_VALIDATE = True
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
 EVALUATE_TEST_SET = False
@@ -61,7 +68,7 @@ SHUFFLE_TARGETS = False
 
 #Whether or not the data should be treated as time series for the purposes of splitting and evaluation
 IS_TIME_SERIES = True
-DO_EXPANDING_WINDOW_VALIDATION = True
+DO_EXPANDING_WINDOW_VALIDATION = False
 TIME_SERIES_COLUMN = 'Date'
 
 #Set whether or not the algorithm should be trained on one data set and tested on another

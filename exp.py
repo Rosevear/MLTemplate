@@ -144,7 +144,7 @@ if __name__ == "__main__":
         # We want the test set to remain temporally ordered, so no shuffling
         shuffle_data = False
         stratify_by = None
-        #Training sizes used by the learning curve plot in absolute terms: sklearn's TimeSeriesSplit cv underutilizes the provided data for some reason when using percentage sizes. TODO: Look into this
+        #Training sizes used by the learning curve plot in absolute terms: sklearn's TimeSeriesSplit cv underutilizes the provided data. See note plot_learning_curve function in exp_utils.py for more detail.
         if config.DO_EXPANDING_WINDOW_VALIDATION:
             train_sizes = np.array([1888, 3777, 5665, 7554, 9443, 11331, 13220, 15109, 16997, 18886, 20775, 22663, 24552, 26441, 28329, 30218, 32107, 33995, 35884, 37773])
         else:
