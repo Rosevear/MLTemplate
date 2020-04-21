@@ -20,7 +20,7 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 
-CUR_CLASSIFIER = MLP
+CUR_CLASSIFIER = DT
 
 ############### EXPERIMENT CONFIG ###############
 
@@ -28,7 +28,7 @@ TRAINING_SET_SIZE = 0.80
 
 RANDOM_SEED = 0
 # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
-K = 5
+K = 10
 
 # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
 REPEATS = 10  # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
@@ -36,11 +36,10 @@ REPEATS = 10  # The number of times to repeat k-fold cross validation with diffe
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
 
-VERBOSE = True
+VERBOSE = False
 
-
-# Whether or not to calibrate the the probabilities when making a class prediction and output them
-PREDICT_PROBABILITY = False
+# Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
+CALIBRATE_PROBABILITY = True
 
 # Whether or not to run some specific analysis of the current classifier regarding how it learns
 ANALYZE_LEARNING = False
@@ -49,7 +48,7 @@ ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 
 #Whether to plot a learning curve to display how the algorithm fares given more training data
-PLOT_LEARNING_CURVES = True
+PLOT_LEARNING_CURVES = False
 
 #Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
 PLOT_VALIDATION_CURVES = False
