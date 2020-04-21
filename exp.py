@@ -188,14 +188,6 @@ if __name__ == "__main__":
         #Shuffle the original data-set for when cross-training
         targets = shuffle(targets)
 
-    #Display some of the data as a sanity check that it is in the desired format
-    if config.VERBOSE:
-        KNN_transformer = get_KNN_classifier_pipeline().named_steps['Column Transformer']
-        data_sample = data[0:3]
-        data_sample = KNN_transformer.fit_transform(data_sample)
-        print("Displaying the first few rows of data transformed by the KNN column transformer...")
-        print(data_sample[0:3, :])
-
     ##### HYPER-PARAMETER TUNING SETUP START ##########
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
@@ -334,6 +326,14 @@ if __name__ == "__main__":
 
     else:
         print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))
+
+        #Display some of the data as a sanity check that it is in the desired format
+    if config.VERBOSE:
+        cur_transformer = cur_pipe.named_steps['Column Transformer']
+        data_sample = data[0:3]
+        data_sample = cur_transformer.fit_transform(data_sample)
+        print("Displaying the first few rows of data transformed by the column transformer...")
+        print(data_sample[0:3, :])
 
     ######### SPECIFIC CLASSIFIER SETUP STOP ########
 
