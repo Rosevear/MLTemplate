@@ -36,7 +36,7 @@ REPEATS = 10  # The number of times to repeat k-fold cross validation with diffe
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
 
-VERBOSE = False
+VERBOSE = True
 
 # Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
 CALIBRATE_PROBABILITY = True

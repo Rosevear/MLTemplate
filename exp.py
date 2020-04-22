@@ -23,7 +23,7 @@ from graphviz import Source
 from datetime import datetime
 
 
-def embed_classifier(clf, sparse=True):
+def embed_classifier_in_pipeline(clf, sparse=False):
     """
     Embed the classifier clf into a machine learning pipeline
 
@@ -58,7 +58,7 @@ def get_dummy_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
 
 def get_MLP_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
@@ -91,7 +91,7 @@ def get_MLP_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
 
 def get_KNN_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
@@ -105,7 +105,7 @@ def get_KNN_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
 
 def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
@@ -121,7 +121,7 @@ def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
 
 def get_logit_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
@@ -136,7 +136,7 @@ def get_logit_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
 
 def get_perceptron_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
@@ -160,7 +160,7 @@ def get_perceptron_classifier_pipeline(calibrate_probs=False, cv=None, method=No
             raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
         clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier(clf)
+    return embed_classifier_in_pipeline(clf)
 
     
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     print("Starting the experiment at {}".format(datetime.now()))
     
-    #Avoid truncating columns in numpy arrays printed to std (for easier visual inspection)
+    #Avoid truncating columns in numpy arrays printed to std out (for easier visual inspection)
     np.set_printoptions(threshold=np.inf)
 
     #Load environment variables
@@ -506,7 +506,7 @@ if __name__ == "__main__":
 
     if config.CALIBRATE_PROBABILITY:
         print(
-            "Splitting the training data into a training set and a held out calibration set ...")
+            "Splitting the training data into a training set and a held out calibration test set ...")
         X_calibration_train, X_calibration_test, y_calibration_train, y_calibration_test = train_test_split(X_train, y_train,
                                                                                                             train_size=config.TRAINING_SET_SIZE,
                                                                                                             random_state=config.RANDOM_SEED,
@@ -520,15 +520,21 @@ if __name__ == "__main__":
             y_calibration_train.shape))
         print("y_calibration_test data dimensions (row, column): {}".format(
             y_calibration_test.shape))
-        num_calibration_train_samples = X_calibration_train.shape[0]
-
-        cur_pipe_calibrator = cur_pipe
-        print("Calibrating the probabilities for {} classifier".format(
-            config.CUR_CLASSIFIER))
-        cur_pipe_calibrator.fit(X_calibration_train, y_calibration_train)
-        cur_pipe_calibrator.predict(X_calibration_test)
-        cur_pipe_calibrator.predict_proba(X_calibration_test)
-        cur_pipe_calibrator.score(X_calibration_test, y_calibration_test)
+        
+        # Setup the calibrated and uncalibrated classifiers for plotting
+        calibrated_classifier = cur_pipe
+        calibrated_classifier_name = "Calibrated {}".format(config.CUR_CLASSIFIER)
+        base_classifier = calibrated_classifier.named_steps['Classifier'].base_estimator
+        base_classifier = embed_classifier_in_pipeline(base_classifier)
+        base_classifier_name = "Uncalibrated {}".format(config.CUR_CLASSIFIER)
+        
+        print('Training the classifiers to plot for calibration...')
+        base_classifier.fit(X_calibration_train, y_calibration_train)
+        calibrated_classifier.fit(X_calibration_train, y_calibration_train)
+        
+        print('Plotting the classifier calibration curves...')
+        classifiers_to_plot = [(base_classifier, base_classifier_name), (calibrated_classifier, calibrated_classifier_name)]
+        utils.plot_calibration_curve(clf_list=classifiers_to_plot, X_test=X_calibration_test, y_test=y_calibration_test)
     ########## CALIBRATION STOP #############
 
 

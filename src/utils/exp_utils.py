@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import logging
 from sklearn.model_selection import learning_curve, validation_curve, cross_validate
+from sklearn.calibration import calibration_curve
+from sklearn.metrics import brier_score_loss
 import matplotlib.pyplot as plt
 
 def freeze_random_generators(random_seed):
@@ -91,7 +93,7 @@ class SlidingWindowTimeSeriesSplit():
     def split(self, X, y=None, groups=None):
 
         n_folds = self.n_splits + 1
-        n_samples = len(X)
+        n_samples = X.shape[0]
         k_fold_size = n_samples // self.n_splits
         indices = np.arange(n_samples)
 
@@ -278,6 +280,61 @@ def plot_validation_curve(estimator, X, y, param_name, param_range, scoring, cv,
     plt.legend(loc="best")
     
     return plt
+
+#NOTE: Code taken from here and modified to fit its present purpose: https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html#sphx-glr-auto-examples-calibration-plot-calibration-curve-py
+def plot_calibration_curve(clf_list, X_test, y_test):
+    
+    """
+    Plots calibration curves and computes summary statistics for each classifier provided in clf_list, where clf_list is a list of tuples in the form (estimator, str)
+    Assumes that the provided classifiers have already been fit on a training and (where applicable) calibration set
+    """
+
+    fig = plt.figure(1, figsize=(10, 10))
+    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((3, 1), (2, 0))
+
+    ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+
+    for clf, name in clf_list:
+        predicted_probs = clf.predict_proba(X_test)
+        prob_pos = predicted_probs[:, 1] 
+        clf_score = brier_score_loss(y_test, prob_pos)
+
+        print("Classes: {}".format(
+            clf.named_steps['Classifier'].classes_))
+        positive_class_prediction_probs = np.array(
+            [prob for prob in predicted_probs[:, 1] if prob > 0.50])
+        negative_class_prediction_probs = np.array(
+            [prob for prob in predicted_probs[:, 0] if prob > 0.50])
+
+        print("{} Classifier Positive Class Probabilites Mean: {}, Standard Deviation {}".format(name,
+            np.mean(positive_class_prediction_probs), np.std(positive_class_prediction_probs)))
+        print("{} Classifier Negative Class Probabilites Mean: {}, Standard Deviation {}".format(name,
+            np.mean(negative_class_prediction_probs), np.std(negative_class_prediction_probs)))
+        print("{} Classifier Accuracy Score: {}".format(name,
+            clf.score(X_test, y_test)))
+        print("{} Classifier Brier Score {}".format(name, clf_score))
+
+        fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=10)
+
+        ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+                label="%s (%1.3f)" % (name, clf_score))
+
+        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+                histtype="step", lw=2)
+
+    ax1.set_ylabel("Fraction of positives")
+    ax1.set_ylim([-0.05, 1.05])
+    ax1.legend(loc="lower right")
+    ax1.set_title('Calibration plots  (reliability curve)')
+
+    ax2.set_xlabel("Mean predicted value")
+    ax2.set_ylabel("Count")
+    ax2.legend(loc="upper center", ncol=2)
+
+    plt.tight_layout()
+
+    plt.show()
 
 
 
