@@ -1,0 +1,57 @@
+
+
+Wednesday, April 22nd, 2020
+
+DT
+Uncalibrated DT Classifier Positive Class Probabilites Mean: 1.0, Standard Deviation 0.0
+Uncalibrated DT Classifier Negative Class Probabilites Mean: 0.9860173688362024, Standard Deviation 0.036634908242338275
+Uncalibrated DT Classifier Accuracy Score: 0.8204670002382655
+Uncalibrated DT Classifier Brier Score 0.18096369645269272
+
+Isotonic calibration
+Calibrated DT Classifier Positive Class Probabilites Mean: 0.7321872988921412, Standard Deviation 0.14528344580637342
+Calibrated DT Classifier Negative Class Probabilites Mean: 0.7793920412592605, Standard Deviation 0.09356379193566171
+Calibrated DT Classifier Accuracy Score: 0.7720991184179176
+Calibrated DT Classifier Brier Score 0.15512999873280944
+
+Sigmoid calibration
+Calibrated DT Classifier Positive Class Probabilites Mean: 0.7307600552615249, Standard Deviation 0.14399383774794905
+Calibrated DT Classifier Negative Class Probabilites Mean: 0.7768496250756005, Standard Deviation 0.09298843071262149
+Calibrated DT Classifier Accuracy Score: 0.7720991184179176
+Calibrated DT Classifier Brier Score 0.1551286972366344
+
+KNN
+Uncalibrated KNN Classifier Positive Class Probabilites Mean: 0.9179795864956818, Standard Deviation 0.13804520271303292
+Uncalibrated KNN Classifier Negative Class Probabilites Mean: 0.9134485020774108, Standard Deviation 0.14011875030104257
+Uncalibrated KNN Classifier Accuracy Score: 0.763164164879676
+Uncalibrated KNN Classifier Brier Score 0.20054324517512512
+
+Isotonic Calibration
+Calibrated KNN Classifier Positive Class Probabilites Mean: 0.7919374344557684, Standard Deviation 0.11832799671134896
+Calibrated KNN Classifier Negative Class Probabilites Mean: 0.7913774985458479, Standard Deviation 0.08843048679411665
+Calibrated KNN Classifier Accuracy Score: 0.8158208243983798
+Calibrated KNN Classifier Brier Score 0.14352097064982283
+
+Sigmoid Calibration
+Calibrated KNN Classifier Positive Class Probabilites Mean: 0.7910678184529712, Standard Deviation 0.10555578124818915
+Calibrated KNN Classifier Negative Class Probabilites Mean: 0.7917249533292721, Standard Deviation 0.08266046373095794
+Calibrated KNN Classifier Accuracy Score: 0.8140338336907315
+Calibrated KNN Classifier Brier Score 0.14404434759665047
+
+MLP
+Uncalibrated MLP Classifier Positive Class Probabilites Mean: 0.9455134268964523, Standard Deviation 0.11103029664519001
+Uncalibrated MLP Classifier Negative Class Probabilites Mean: 0.9345239647142618, Standard Deviation 0.10171507712232766
+Uncalibrated MLP Classifier Accuracy Score: 0.8199904693828926
+Uncalibrated MLP Classifier Brier Score 0.15107935630521277
+
+Isotonic Calibration
+Calibrated MLP Classifier Positive Class Probabilites Mean: 0.8022893391260919, Standard Deviation 0.12361992269512086
+Calibrated MLP Classifier Negative Class Probabilites Mean: 0.8558581264432722, Standard Deviation 0.09712950170786337
+Calibrated MLP Classifier Accuracy Score: 0.822968787228973
+Calibrated MLP Classifier Brier Score 0.1358588853028556
+
+Sigmoid Calibration
+Calibrated MLP Classifier Positive Class Probabilites Mean: 0.787289510337533, Standard Deviation 0.09653733943332189
+Calibrated MLP Classifier Negative Class Probabilites Mean: 0.8442029977661847, Standard Deviation 0.07996344599546093
+Calibrated MLP Classifier Accuracy Score: 0.8218965928043841
+Calibrated MLP Classifier Brier Score 0.13465022092242834

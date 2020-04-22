@@ -113,8 +113,7 @@ def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
      Decision Tree Classifier: https://scikit-learn.org/stable/modules/tree.html
     """
 
-    clf =  DecisionTreeClassifier(max_depth=20,
-                            random_state=config.RANDOM_SEED)
+    clf =  LogisticRegression()
 
     if calibrate_probs:
         if cv is None or method is None:
@@ -314,7 +313,7 @@ if __name__ == "__main__":
         cur_pipe_name = config.DUMMY
 
     elif config.CUR_CLASSIFIER == config.MLP:
-        cur_pipe = get_MLP_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
+        cur_pipe = get_MLP_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
         cur_pipe_name = config.MLP
         param_name = 'Classifier__alpha'
         param_range = 10.0 ** -np.arange(1, 7)
@@ -338,6 +337,13 @@ if __name__ == "__main__":
         cur_pipe_name = config.PERCEPTRON
         param_name = 'Classifier__max_iter'
         param_range = np.arange(500, 10000, 500)
+
+    elif config.CUR_CLASSIFIER == config.LOGISTIC:
+        cur_pipe = get_logit_classifier_pipeline(
+            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
+        cur_name = config.CUR_CLASSIFIER
+        param_name = 'Classifier__C'
+        param_range = np.arange(0.0, 1.1, 0.10)
 
     else:
         print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))

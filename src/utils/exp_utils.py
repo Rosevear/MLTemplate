@@ -289,7 +289,7 @@ def plot_calibration_curve(clf_list, X_test, y_test):
     Assumes that the provided classifiers have already been fit on a training and (where applicable) calibration set
     """
 
-    fig = plt.figure(1, figsize=(10, 10))
+    plt.figure(1, figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
 
