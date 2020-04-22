@@ -184,7 +184,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
         NOTE: The TimeSeriesSplit object does not appear to play nicely with the learning_curve function; it uses the size of the first train-test split created by TimeSeriesSplit to determine the maximum number of training examples, 
         which results in the learning curve not making use of all of the the available data. This is likely because it expects a k-fold validator, which does not have to respect temporal ordering and can therefore always combine all 
         of the non-test set folds in each train-test split resulting in all cross-validations being performed on training sets of the same size. In contrast, performing an expanding window validation starts of with a small training set 
-        that grows over time within the cross-validation procedure, so the learning curve plotting functions assume that the first train-test split size is representative of all of them. The code below manually sp;its up the data 
+        that grows over time within the cross-validation procedure, so the learning curve plotting functions assume that the first train-test split size is representative of all of them. The code below manually splits up the data 
         into different sizes and uses an expanding window validation on each data set size, up to the maximum amount of data available.
         """
         train_scores = np.empty((len(train_sizes), config.K))
@@ -193,18 +193,14 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
         
         for i in range(len(train_sizes)):
             cur_train_size = train_sizes[i]
-            cur_train_data = X.iloc[0:cur_train_size + 1, :]
+            cur_train_data = X.iloc[0:cur_train_size, :]
+            cur_train_targets = y.iloc[0:cur_train_size]
             
-            if config.VERBOSE:
-                print('Time Series expanding window split indices for the current subsection of data...')
-                for train, test in cv.split(cur_train_data):
-                    print("Train indices: {} Test indices: {}".format(train, test))
-            
-            cur_train_targets = y.iloc[0:cur_train_size + 1]
             cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
-            train_scores[i: i + 1, :] = cross_val_results['train_score']
-            test_scores[i: i + 1, :] = cross_val_results['test_score']
-            fit_times[i: i + 1, :] = cross_val_results['fit_time']
+            
+            train_scores[i, :] = cross_val_results['train_score']
+            test_scores[i, :] = cross_val_results['test_score']
+            fit_times[i, :] = cross_val_results['fit_time']
             
     else:
         train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)

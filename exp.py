@@ -113,7 +113,8 @@ def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
      Decision Tree Classifier: https://scikit-learn.org/stable/modules/tree.html
     """
 
-    clf =  LogisticRegression()
+    clf = DecisionTreeClassifier(max_depth=20,
+                                 random_state=config.RANDOM_SEED)
 
     if calibrate_probs:
         if cv is None or method is None:
@@ -127,8 +128,7 @@ def get_logit_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
     """
     Logistic Regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     """
-    clf = DecisionTreeClassifier(max_depth=20,
-                                 random_state=config.RANDOM_SEED)
+    clf = LogisticRegression()
 
     if calibrate_probs:
         if cv is None or method is None:
@@ -260,9 +260,10 @@ if __name__ == "__main__":
     if config.VERBOSE:
         print(
             'Current train test cross-validation split for the training data (using the first 100 row of data as an example of the split) ...')
-        for train, test in cv_procedure.split(X_train.iloc[0:100, :], y_train.iloc[0:100]):
-                    print("Train indices: {} Test indices: {}".format(
-                        train, test))
+        X_train_sample = X_train.iloc[0:100, :]
+        y_train_sample = y_train.iloc[0:100]
+        for train, test in cv_procedure.split(X_train_sample, y_train_sample):
+            print("Train indices: {} Test indices: {}".format(train, test))
 
     ###### CV SETUP STOP #######
 

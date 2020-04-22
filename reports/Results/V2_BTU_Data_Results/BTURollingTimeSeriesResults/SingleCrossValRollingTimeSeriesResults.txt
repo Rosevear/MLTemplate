@@ -1,4 +1,5 @@
 
+K refers to the number of folds used for testing.
 K = 10
 
 Cross validating DT classifier...

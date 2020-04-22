@@ -21,7 +21,7 @@ MLP = "MLP"
 DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
 
-CUR_CLASSIFIER = LOGISTIC
+CUR_CLASSIFIER = DT
 
 ############### EXPERIMENT CONFIG ###############
 
@@ -40,7 +40,7 @@ METRIC_LIST = ['accuracy']
 VERBOSE = True
 
 # Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
-CALIBRATE_PROBABILITY = True
+CALIBRATE_PROBABILITY = False
 NUM_CALIBRATION_BINS = 10
 
 # Whether or not to run some specific analysis of the current classifier regarding how it learns
@@ -50,16 +50,16 @@ ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 
 #Whether to plot a learning curve to display how the algorithm fares given more training data
-PLOT_LEARNING_CURVES = False
+PLOT_LEARNING_CURVES = True
 
 #Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
-PLOT_VALIDATION_CURVES = False
+PLOT_VALIDATION_CURVES = True
 
 #Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
 
 #Whether or not to report a single cross validation score for a given set of parameters
-CROSS_VALIDATE = False
+CROSS_VALIDATE = True
 
 #Whether or not to run the experiment with the held out test set to estimate generalization performance
 EVALUATE_TEST_SET = False
@@ -72,7 +72,7 @@ SHUFFLE_TARGETS = False
 
 #Whether or not the data should be treated as time series for the purposes of splitting and evaluation
 IS_TIME_SERIES = True
-DO_EXPANDING_WINDOW_VALIDATION = False
+DO_EXPANDING_WINDOW_VALIDATION = True
 TIME_SERIES_COLUMN = 'Date'
 
 #Set whether or not the algorithm should be trained on one data set and tested on another
