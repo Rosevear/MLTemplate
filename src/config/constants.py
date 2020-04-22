@@ -20,7 +20,7 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 
-CUR_CLASSIFIER = DT
+CUR_CLASSIFIER = KNN
 
 ############### EXPERIMENT CONFIG ###############
 
@@ -40,6 +40,7 @@ VERBOSE = True
 
 # Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
 CALIBRATE_PROBABILITY = True
+NUM_CALIBRATION_BINS = 10
 
 # Whether or not to run some specific analysis of the current classifier regarding how it learns
 ANALYZE_LEARNING = False

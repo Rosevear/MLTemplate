@@ -320,14 +320,14 @@ if __name__ == "__main__":
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
-        cur_pipe = get_KNN_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
+        cur_pipe = get_KNN_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
         cur_pipe_name = config.KNN
         param_name = 'Classifier__n_neighbors'
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline(
-            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
+            config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
         cur_pipe_name = config.DT
         param_name = 'Classifier__max_depth'
         param_range = np.arange(1, 51)

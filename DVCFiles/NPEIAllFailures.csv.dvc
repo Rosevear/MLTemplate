@@ -1,0 +1,8 @@
+md5: 8525287030aa2a2ac7bfc0a13247f5c8
+wdir: .
+outs:
+- md5: 34fa0ef7b529b2d542ed3577aab57025
+  path: NPEIAllFailures.csv
+  cache: true
+  metric: false
+  persist: false

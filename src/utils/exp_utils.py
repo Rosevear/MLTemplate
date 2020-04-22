@@ -315,12 +315,12 @@ def plot_calibration_curve(clf_list, X_test, y_test):
             clf.score(X_test, y_test)))
         print("{} Classifier Brier Score {}".format(name, clf_score))
 
-        fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=10)
+        fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=config.NUM_CALIBRATION_BINS)
 
         ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                 label="%s (%1.3f)" % (name, clf_score))
 
-        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+        ax2.hist(prob_pos, range=(0, 1), bins=config.NUM_CALIBRATION_BINS, label=name,
                 histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
