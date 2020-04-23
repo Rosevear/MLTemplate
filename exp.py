@@ -66,25 +66,24 @@ def get_MLP_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
     MLP Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier
     """
 
-    clf = clf = MLPClassifier()
-    clf.set_params(hidden_layer_sizes=(100,),
-                   activation='relu',
-                   solver='adam',
-                   alpha=0.0001,  # L2 regularization parameter
-                   batch_size='auto',
-                   learning_rate='adaptive',
-                   learning_rate_init=0.001,
-                   power_t=0.5,  # Only used for invscaling option of learning_rate
-                   momentum=0.9,  # Only used for SGD
-                   nesterovs_momentum=True,  # Only used for SGD and momentum > 0
-                   beta_1=0.9,  # Both betas are paramters for the Adam solver
-                   beta_2=0.999,
-                   epsilon=1e-8,  # Adam numerical stability constant
-                   max_iter=200,
-                   early_stopping=True,
-                   verbose=False,
-                   shuffle=True,
-                   random_state=config.RANDOM_SEED)
+    clf = clf = MLPClassifier(hidden_layer_sizes=(100,),
+                              activation='relu',
+                              solver='adam',
+                              alpha=0.0001,  # L2 regularization parameter
+                              batch_size='auto',
+                              learning_rate='adaptive',
+                              learning_rate_init=0.001,
+                              power_t=0.5,  # Only used for invscaling option of learning_rate
+                              momentum=0.9,  # Only used for SGD
+                              nesterovs_momentum=True,  # Only used for SGD and momentum > 0
+                              beta_1=0.9,  # Both betas are paramters for the Adam solver
+                              beta_2=0.999,
+                              epsilon=1e-8,  # Adam numerical stability constant
+                              max_iter=200,
+                              early_stopping=True,
+                              verbose=False,
+                              shuffle=True,
+                              random_state=config.RANDOM_SEED)
 
     if calibrate_probs:
         if cv is None or method is None:
@@ -320,7 +319,7 @@ if __name__ == "__main__":
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
-        cur_pipe = get_KNN_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
+        cur_pipe = get_KNN_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
         cur_pipe_name = config.KNN
         param_name = 'Classifier__n_neighbors'
         param_range = np.arange(1, 11, 1)
@@ -349,7 +348,7 @@ if __name__ == "__main__":
     else:
         print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))
 
-        #Display some of the data as a sanity check that it is in the desired format
+    # Display some of the data as a sanity check that it is in the desired format
     if config.VERBOSE:
         cur_transformer = cur_pipe.named_steps['Column Transformer']
         data_sample = data[0:3]

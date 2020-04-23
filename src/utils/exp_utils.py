@@ -193,8 +193,8 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
         
         for i in range(len(train_sizes)):
             cur_train_size = train_sizes[i]
-            cur_train_data = X.iloc[0:cur_train_size, :]
-            cur_train_targets = y.iloc[0:cur_train_size]
+            cur_train_data = X.iloc[0:cur_train_size + 1, :]
+            cur_train_targets = y.iloc[0:cur_train_size + 1]
             
             cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
             
