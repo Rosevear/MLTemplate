@@ -37,6 +37,7 @@ def embed_classifier_in_pipeline(clf, sparse=False):
     standardization_step = ('Standardization For Interval Data',
                             StandardScaler(), config.NUMERICAL_COLUMNS)
 
+    # Transformer utility class to encode the inputs of different columns: https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html
     transformer = ColumnTransformer(transformers=[
                                     one_hot_encoding_step, standardization_step],  remainder='passthrough')
 
@@ -313,7 +314,7 @@ if __name__ == "__main__":
         cur_pipe_name = config.DUMMY
 
     elif config.CUR_CLASSIFIER == config.MLP:
-        cur_pipe = get_MLP_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
+        cur_pipe = get_MLP_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
         cur_pipe_name = config.MLP
         param_name = 'Classifier__alpha'
         param_range = 10.0 ** -np.arange(1, 7)
@@ -326,7 +327,7 @@ if __name__ == "__main__":
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline(
-            config.CALIBRATE_PROBABILITY, cv_procedure, 'sigmoid')
+            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
         cur_pipe_name = config.DT
         param_name = 'Classifier__max_depth'
         param_range = np.arange(1, 51)
@@ -511,6 +512,16 @@ if __name__ == "__main__":
     ########## CALIBRATION START ############
 
     if config.CALIBRATE_PROBABILITY:
+
+        # Perform a kind of nested cross validation to get an a
+        if config.CROSS_VALIDATE_CALIBRATION_PERFROMANCE:
+            print("Cross validating calibrated {} classifier...".format(config.CUR_CLASSIFIER))
+            cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=True)
+            print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+            print("Cross Validation Dev set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['test_score']), np.std(cross_val_results['test_score'])))
+
+
+        # Compute the calibration curves and get results for the held out test set
         print(
             "Splitting the training data into a training set and a held out calibration test set ...")
         X_calibration_train, X_calibration_test, y_calibration_train, y_calibration_test = train_test_split(X_train, y_train,
@@ -541,6 +552,8 @@ if __name__ == "__main__":
         print('Plotting the classifier calibration curves...')
         classifiers_to_plot = [(base_classifier, base_classifier_name), (calibrated_classifier, calibrated_classifier_name)]
         utils.plot_calibration_curve(clf_list=classifiers_to_plot, X_test=X_calibration_test, y_test=y_calibration_test)
+        
+
     ########## CALIBRATION STOP #############
 
 
@@ -600,15 +613,33 @@ if __name__ == "__main__":
     if config.IS_CROSS_TRAIN:
         cross_data_source = config.PROCESSED_DATA_DIR / config.CROSS_TEST_FILE
         print("Loading the cross-testing data from {}".format(cross_data_source))
-        cross_data = utils.load_csv(data_source, logger)
+        cross_data = utils.load_csv(cross_data_source, logger)
         cross_targets = cross_data[config.TARGET_COLUMN_NAME]
         del cross_data[config.TARGET_COLUMN_NAME]
+
+        # Delete any columns in the cross testing data that are not present in the training data
+        for cross_column in cross_data.columns:
+            if not cross_column in data.columns:
+                del cross_data[cross_column]
 
         print("Displaying the columns of the cross-data...")
         print(list(cross_data))
 
+        print("Displaying the dimensions of the cross testing data...")
+        print("Cross data feature vector dimensions (row, column): {}".format(
+            cross_data.shape))
+        print("Cross data target label dimensions (row, column): {}".format(
+            cross_targets.shape))
+
+        target_series = pd.Series(cross_targets)
+        print('cross target counts \n {}'.format(target_series.value_counts()))
+
+        print("Training on the data from {}".format(data_source))
         cur_pipe.fit(data, targets)
+        
+        print("Testing on the cross test data...")
         cross_test_score = cur_pipe.score(cross_data, cross_targets)
+        
         print("Cross Test generalization score {}".format(cross_test_score))
         
         print("Plotting the confusion matrix for the cross-test ...")

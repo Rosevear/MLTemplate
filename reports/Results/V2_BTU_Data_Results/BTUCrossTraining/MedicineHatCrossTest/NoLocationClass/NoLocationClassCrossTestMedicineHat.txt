@@ -1,0 +1,14 @@
+DT
+Cross Test generalization score 0.7468051118210862
+
+KNN
+Cross Test generalization score 0.6897535371976267
+
+
+MLP
+Cross Test generalization score 0.7521679598356915
+
+
+cross target counts
+ 1    6197
+0    2567
