@@ -6,10 +6,10 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = ROOT_DIR / "data/raw"
 INTERIM_DATA_DIR = ROOT_DIR / "data/interim"
 PROCESSED_DATA_DIR = ROOT_DIR / "data/processed"
-PROCESSED_FILE_SAVE_SUFFIX = ""
+PROCESSED_FILE_SAVE_SUFFIX = "_time_series"
 PROCESSED_FILE_EXTENSION = ".csv"
-CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
-#CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08_time_series.csv"
+#CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
+CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08_time_series.csv"
 #CROSS_TEST_FILE = "NPEIAllFailures.csv"
 CROSS_TEST_FILE =  "Medicine_Hat_Full_Data_2020-04-09.csv"
 
@@ -21,8 +21,9 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
+KERAS = 'KERAS'
 
-CUR_CLASSIFIER = DT
+CUR_CLASSIFIER = KERAS
 
 ############### EXPERIMENT CONFIG ###############
 
@@ -65,7 +66,7 @@ COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
 CROSS_VALIDATE = False
 
 # Whether or not to run the experiment with the held out test set to estimate generalization performance
-EVALUATE_TEST_SET = False
+EVALUATE_TEST_SET = True
 
 # Whether or not to return the training scores used during learning
 RETURN_TRAIN_SCORES = True
@@ -74,12 +75,12 @@ RETURN_TRAIN_SCORES = True
 SHUFFLE_TARGETS = False
 
 # Whether or not the data should be treated as time series for the purposes of splitting and evaluation
-IS_TIME_SERIES = False
+IS_TIME_SERIES = True
 DO_EXPANDING_WINDOW_VALIDATION = True
 TIME_SERIES_COLUMN = 'Date'
 
 # Set whether or not the algorithm should be trained on one data set and tested on another
-IS_CROSS_TRAIN = True
+IS_CROSS_TRAIN = False
 
 ####### LOGGING CONFIG######
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -90,7 +91,7 @@ LOGFILE = ROOT_DIR / "logs" / "data.log"
 CLASSES = [1, 0]
 
 ####### DATA ########
-CATEGORICAL_COLUMNS = ['LOCATION_CLASS'
+CATEGORICAL_COLUMNS = ['LOCATION_CLASS',
 'YEAR', 'MONTH', 'DAY', 'DOW', 
 'PREVYEAR', 'PREVMONTH', 'PREVDAY','PREVDOW', 'PREV_UOM', 
 'PREVPREVYEAR', 'PREVPREVMONTH', 'PREVPREVDAY', 'PREVPREVDOW', 'PREVPREV_UOM', 

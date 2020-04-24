@@ -99,7 +99,7 @@ if __name__ == '__main__':
     print("Fetching the first few rows of un-featurized data to display...")
     pd.set_option('display.max_rows', 500)
     print(data.head(10))
-    data = construct_features_BTU_1(data)
+    data = construct_time_series_features_BTU_1(data)
 
     print("Fetching the first few rows of featurized data to display...")
     print(data.head(10))

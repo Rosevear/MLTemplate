@@ -1,3 +1,4 @@
+# Misc imports
 import os
 import dotenv
 import pandas as pd
@@ -6,6 +7,11 @@ import utils
 import mlflow.sklearn
 import mlflow
 import numpy as np
+import matplotlib.pyplot as plt
+from graphviz import Source
+from datetime import datetime
+
+#Scikit-learn imports
 from sklearn.compose import ColumnTransformer
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neighbors import KNeighborsClassifier
@@ -18,9 +24,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.dummy import DummyClassifier
 from sklearn.calibration import calibration_curve, CalibratedClassifierCV
 from sklearn.neural_network import MLPClassifier
-import matplotlib.pyplot as plt
-from graphviz import Source
-from datetime import datetime
+
+# Tensorflow imports
+import tensorflow as tf
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 
 def embed_classifier_in_pipeline(clf, sparse=False):
@@ -46,6 +55,35 @@ def embed_classifier_in_pipeline(clf, sparse=False):
 
     return pipeline
 
+
+def create_keras_model():
+    """
+    The tensorflow keras module provides a scikit-learn classifier wrapper class that implements the scikit-learn API. See here: https://github.com/tensorflow/tensorflow/blob/e5bf8de410005de06a7ff5393fafdf832ef1d4ad/tensorflow/python/keras/wrappers/scikit_learn.py#L191-L310
+    """
+	
+    # Define the model structure 
+    model = Sequential()
+    model.add(Dense(units=100, input_dim=36, use_bias=True, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+	
+    # Compile model
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	
+    return model
+
+def get_keras_classifier_pipelin(calibrate_probs=False, cv=None, method=None):
+    """
+    Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
+    """
+
+    clf = KerasClassifier(build_fn=create_keras_model, epochs=150, batch_size=32)
+
+    if calibrate_probs:
+        if cv is None or method is None:
+            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
+        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
+
+    return embed_classifier_in_pipeline(clf)
 
 def get_dummy_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
     """
@@ -345,6 +383,12 @@ if __name__ == "__main__":
         cur_name = config.CUR_CLASSIFIER
         param_name = 'Classifier__C'
         param_range = np.arange(0.0, 1.1, 0.10)
+
+    elif config.CUR_CLASSIFIER == config.KERAS:
+        cur_pipe = get_keras_classifier_pipelin(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
+        cur_pipe_name = config.CUR_CLASSIFIER
+        param_name = 'Classifier__batch_size'
+        param_range = np.array([32, 64, 128])
 
     else:
         print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))
@@ -649,10 +693,13 @@ if __name__ == "__main__":
     ####### CROSS TRAIN STOP ######
         
     ######### GENERALIZATION TEST START #########
-    #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think we can get. This next step is to get an unbiased estimate of the models performance on unseen data
+    #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think we can get. This next step is to get an unbiased estimate of the model's performance on unseen data
     if config.EVALUATE_TEST_SET:
         print("Training and testing the generalization score for accuracy...")
+        X_train = X_train.to_numpy()
+        y_train = y_train.to_numpy()
         cur_pipe.fit(X_train, y_train)
+        
         final_score = cur_pipe.score(X_test, y_test)
         print("Test generalization score: {} ".format(final_score))
         

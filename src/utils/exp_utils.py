@@ -332,6 +332,19 @@ def plot_calibration_curve(clf_list, X_test, y_test):
 
     plt.show()
 
+def get_column_positions(column_headings, feature_list):
+    """
+    Return a list of the corresponding position within column_headings of each feature in feature_list.
+    This can be used to get the position of lists of features for use in pipelines and transformers where
+    one cannot rely on the input being a pandas DataFrame.
+    """
+
+    feature_to_pos = {}
+    for i in range(len(column_headings)):
+        feature_to_pos[column_headings[i]] = i
+    feature_positions = [feature_to_pos[feature] for feature in feature_list] 
+    
+    return feature_positions
 
 
 
