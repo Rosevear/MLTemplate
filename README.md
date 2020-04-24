@@ -42,22 +42,22 @@ conda create --name <you_env_name> python=3.6
 
     conda activate <your_env_name>
 
-6. To install tensorflow: Tensorflow is an open source machine learning and numerical computing platform https://www.tensorflow.org/
+6. To install tensorflow: Tensorflow is an open source machine learning and numerical computing platform. See https://www.tensorflow.org/
 
     conda install tensorflow
 
-7. Verify that the installation was successful: you should see the version displayed without any errors (warnings about unoptimized binaries for your compute architecture are OK. There are different versions of tensorflow that allow for CPU specific optimizations to train models faster, but this typically requires building tensorflow from source. See here for more info).
+7. Verify that the installation was successful: you should see the version displayed without any errors (warnings about unoptimized binaries for your compute architecture are OK. There are different versions of tensorflow that allow for CPU specific optimizations to train models faster, but this typically requires building tensorflow from source. See the following for more info: https://www.tensorflow.org/install/source_windows.
 
 python -c "import tensorflow as tf; print(tf.__version__)"
 
 Anaconda Cloud also has a gpu-specific installation of tensorflow that will download and manage the necessary GPU API's (e.g. CUDA) as well. 
-See the following for more information on the relationship between CPU and GPU packages within the Conda ecosystem: https://docs.anaconda.com/anaconda/user-guide/tasks/tensorflow/ and https://www.anaconda.com/tensorflow-in-anaconda/
+See the following for more information on the relationship between CPU and GPU packages within the conda ecosystem: https://docs.anaconda.com/anaconda/user-guide/tasks/tensorflow/ and https://www.anaconda.com/tensorflow-in-anaconda/
 
-NOTE: GPU enabled tensorflow requires that the relevant CUDA and CUDAnn libraries are also installed, along with an NVIDIA driver for your GPU. The Conda package manager will handle the former software requirements but not the latter.
+NOTE: GPU enabled tensorflow requires that the relevant CUDA and CUDAnn libraries are also installed, along with an NVIDIA driver for your GPU. The conda package manager will handle the former software requirements but not the latter.
 
 Finally, the intended GPU itself must be CUDA enabled. See here for a list of CUDA enabled Nvidia products: https://developer.nvidia.com/cuda-gpus
 
-See here https://www.tensorflow.org/install/gpu for installation instructions and requirements for dpu enabled tensorflow
+See here https://www.tensorflow.org/install/gpu for installation instructions and requirements for gpu enabled tensorflow
 
 8. To install keras: Keras is a high level Deep Learning API that supports multiple ML frameworks as a backend (like Tensorflow): https://keras.io/.
 
