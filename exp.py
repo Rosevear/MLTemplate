@@ -32,19 +32,66 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 
-def embed_classifier_in_pipeline(clf, sparse=False):
+def shuffle_targets(targets_to_shuffle):
+    """
+    Shuffle the provided targets randomly
+    """
+    print("first 10 training rows of targets...")
+    print(targets_to_shuffle[0:10])
+    shuffled_targets = shuffle(targets_to_shuffle)
+    print("first 10 rows of targets shuffled...")
+    print(shuffled_targets[0:10])
+
+    return shuffled_targets
+
+def get_cv_procedure():
+    """
+    Returns the cross validation procedure to use based on the current configuration settings
+    """
+
+    # NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
+    if config.IS_TIME_SERIES:
+        if config.DO_EXPANDING_WINDOW_VALIDATION:
+            # The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
+            cv_procedure = TimeSeriesSplit(n_splits=config.K)
+        else:
+            # A custom class. See docstring in exp_utils.py for more detail
+            cv_procedure = utils.SlidingWindowTimeSeriesSplit(
+                n_splits=config.K)
+
+    else:
+        if config.DO_REPEATED_K_FOLD:
+            # We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedStratifiedKFold.html#sklearn-model-selection-repeatedstratifiedkfold
+            cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+        else:
+            # See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+            cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+
+    return cv_procedure
+
+def create_classifier_pipeline(clf, data, sparse=False):
     """
     Embed the classifier clf into a machine learning pipeline
 
     Setting sparse to false will tell the 1-hot encoder to return matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
+    
+    data is used to extract the heading columns and their positions. It can also be used to compute statistics over the data that may be needed to pass into the pipeline
     """
+
+    column_headers = data.columns.tolist()
+
+    if config.CALIBRATE_PROBABILITY:
+        cv_procedure = get_cv_procedure()
+        clf = CalibratedClassifierCV(clf, cv_procedure, config.CALIBRATION_METHOD)
+
+
     # This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
     one_hot_encoding_step = ('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
-        sparse=sparse, handle_unknown='ignore'), config.CATEGORICAL_COLUMNS)
+        sparse=sparse, handle_unknown='ignore'), utils.get_column_positions(column_headers, config.CATEGORICAL_COLUMNS))
 
     # And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
     standardization_step = ('Standardization For Interval Data',
-                            StandardScaler(), config.NUMERICAL_COLUMNS)
+                            StandardScaler(), utils.get_column_positions(column_headers, config.NUMERICAL_COLUMNS))
 
     # Transformer utility class to encode the inputs of different columns: https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html
     transformer = ColumnTransformer(transformers=[
@@ -71,36 +118,26 @@ def create_keras_model():
 	
     return model
 
-def get_keras_classifier_pipelin(calibrate_probs=False, cv=None, method=None):
+def get_keras_classifier_pipeline(data):
     """
     Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
     """
 
     clf = KerasClassifier(build_fn=create_keras_model, epochs=150, batch_size=32)
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
+    return create_classifier_pipeline(clf, data)
 
-    return embed_classifier_in_pipeline(clf)
-
-def get_dummy_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_dummy_classifier_pipeline(data):
     """
     Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
     """
 
     clf = DummyClassifier()
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
-
-    return embed_classifier_in_pipeline(clf)
+    return create_classifier_pipeline(clf, data)
 
 
-def get_MLP_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_MLP_classifier_pipeline(data):
     """
     MLP Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier
     """
@@ -124,29 +161,20 @@ def get_MLP_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
                               shuffle=True,
                               random_state=config.RANDOM_SEED)
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
 
-    return embed_classifier_in_pipeline(clf)
+    return create_classifier_pipeline(clf, data)
 
 
-def get_KNN_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_KNN_classifier_pipeline(data):
     """
     #K-Nearest Neighbours: https://scikit-learn.org/stable/modules/neighbors.html#id6
     """
     clf = KNeighborsClassifier(n_neighbors=5)
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
-
-    return embed_classifier_in_pipeline(clf)
+    return create_classifier_pipeline(clf, data)
 
 
-def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_DT_classifier_pipeline(data):
     """
      Decision Tree Classifier: https://scikit-learn.org/stable/modules/tree.html
     """
@@ -154,29 +182,19 @@ def get_DT_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
     clf = DecisionTreeClassifier(max_depth=20,
                                  random_state=config.RANDOM_SEED)
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
-
-    return embed_classifier_in_pipeline(clf)
+    return create_classifier_pipeline(clf, data)
 
 
-def get_logit_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_logit_classifier_pipeline(data):
     """
     Logistic Regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     """
     clf = LogisticRegression()
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
-
-    return embed_classifier_in_pipeline(clf)
+    return create_classifier_pipeline(clf, data)
 
 
-def get_perceptron_classifier_pipeline(calibrate_probs=False, cv=None, method=None):
+def get_perceptron_classifier_pipeline(data):
     """
     Perceptron: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html#sklearn.linear_model.Perceptron
     """
@@ -192,14 +210,7 @@ def get_perceptron_classifier_pipeline(calibrate_probs=False, cv=None, method=No
                      n_iter_no_change=5,
                      random_state=config.RANDOM_SEED)
 
-    if calibrate_probs:
-        if cv is None or method is None:
-            raise ValueError("Pipelines which calibrate their probabilities require both a cv and method argument, but one or both are missing. Current arguments for cv and method parameters respectively: {}, {}".format(str(cv), method))
-        clf = CalibratedClassifierCV(base_estimator=clf, method=method, cv=cv)
-
-    return embed_classifier_in_pipeline(clf)
-
-    
+    return create_classifier_pipeline(clf, data)
 
 if __name__ == "__main__":
 
@@ -259,41 +270,13 @@ if __name__ == "__main__":
     num_samples = X_train.shape[0]
     num_features = X_train.shape[1]
 
-
-    #Check that the accepted and rejected training targets are roughly equally balanced
-    target_series = pd.Series(y_train)
-    print('training set target counts \n {}'.format(target_series.value_counts()))
     if config.SHUFFLE_TARGETS:
-        print("first 10 training rows of targets...")
-        print(y_train[0:10])
-        y_train = shuffle(y_train)
-        print("first 10 rows of targets shuffled...")
-        print(y_train[0:10])
+        y_train = shuffle_targets(y_train)
+        if config.IS_CROSS_TRAIN:
+            # Shuffle the original data-set targets for when cross-training
+            targets = shuffle_targets(targets)
 
-        #Shuffle the original data-set for when cross-training
-        targets = shuffle(targets)
-
-    ####### CV SETUP START ###########
-    #NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
-    if config.IS_TIME_SERIES:
-        if config.DO_EXPANDING_WINDOW_VALIDATION:
-            #The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
-            cv_procedure = TimeSeriesSplit(n_splits=config.K)
-        else:
-            #A custom class. See docstring in exp_utils.py for more detail
-            cv_procedure = utils.SlidingWindowTimeSeriesSplit(
-                n_splits=config.K)
-
-    else:
-        #Define the k-fold cross validation model evaluation procedure. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-        cv_procedure = StratifiedKFold(
-            n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-
-        #We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate
-        #cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
-
-        # cv_procedure = RepeatedKFold(
-        #     n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+    cv_procedure = get_cv_procedure()
 
     if config.VERBOSE:
         print(
@@ -303,29 +286,92 @@ if __name__ == "__main__":
         for train, test in cv_procedure.split(X_train_sample, y_train_sample):
             print("Train indices: {} Test indices: {}".format(train, test))
 
-    ###### CV SETUP STOP #######
+        #Check that the accepted and rejected training targets are roughly equally balanced
+        target_series = pd.Series(y_train)
+        print('training set target counts \n {}'.format(target_series.value_counts()))
+
+    ###### SPECIFIC CLASSIFIER SETUP START #######
+    #Setup the classifier specific parameters for the learning and validation curves
+    #NOTE: For each class the param_range varable is only used to setup a range for the validation curve to explore.
+    print("Setting up the {} classifier...".format(
+        config.CUR_CLASSIFIER))
+    if config.CUR_CLASSIFIER == config.DUMMY:
+        cur_pipe = get_dummy_classifier_pipeline(data)
+        cur_pipe_name = config.DUMMY
+
+    elif config.CUR_CLASSIFIER == config.MLP:
+        cur_pipe = get_MLP_classifier_pipeline(data)
+        cur_pipe_name = config.MLP
+        param_name = 'Classifier__alpha'
+        param_range = 10.0 ** -np.arange(1, 7)
+
+    elif config.CUR_CLASSIFIER == config.KNN:
+        cur_pipe = get_KNN_classifier_pipeline(data)
+        cur_pipe_name = config.KNN
+        param_name = 'Classifier__n_neighbors'
+        param_range = np.arange(1, 11, 1)
+
+    elif config.CUR_CLASSIFIER == config.DT:
+        cur_pipe = get_DT_classifier_pipeline(data)
+        cur_pipe_name = config.DT
+        param_name = 'Classifier__max_depth'
+        param_range = np.arange(1, 51)
+
+    elif config.CUR_CLASSIFIER == config.PERCEPTRON:
+        cur_pipe = get_perceptron_classifier_pipeline(data)
+        cur_pipe_name = config.PERCEPTRON
+        param_name = 'Classifier__max_iter'
+        param_range = np.arange(500, 10000, 500)
+
+    elif config.CUR_CLASSIFIER == config.LOGISTIC:
+        cur_pipe = get_logit_classifier_pipeline(data)
+        cur_name = config.CUR_CLASSIFIER
+        param_name = 'Classifier__C'
+        param_range = np.arange(0.0, 1.1, 0.10)
+
+    elif config.CUR_CLASSIFIER == config.KERAS:
+        cur_pipe = get_keras_classifier_pipeline(data)
+        cur_pipe_name = config.CUR_CLASSIFIER
+        param_name = 'Classifier__batch_size'
+        param_range = np.array([32, 64, 128])
+
+    else:
+        print("The current classifier {} is not recognized".format(
+            config.CUR_CLASSIFIER))
+
+    # Display some of the data as a sanity check that it is in the desired format
+    if config.VERBOSE:
+        cur_transformer = cur_pipe.named_steps['Column Transformer']
+        data_sample = data[0:3]
+        data_sample = cur_transformer.fit_transform(data_sample)
+        print(
+            "Displaying the first few rows of data transformed by the column transformer...")
+        print(data_sample[0:3, :])
+
+    ######### SPECIFIC CLASSIFIER SETUP STOP ########
+
 
     ##### HYPER-PARAMETER TUNING SETUP START ##########
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
-    KNN_pipeline = get_KNN_classifier_pipeline()
+    KNN_pipeline = get_KNN_classifier_pipeline(data)
     KNN_params = [{'Classifier__n_neighbors': list(range(5, 6)),
                     'Classifier__p': [2],''
                     'Classifier__random_state': config.RANDOM_SEED
                     }] 
     
-    DT_pipeline = get_DT_classifier_pipeline()
+    DT_pipeline = get_DT_classifier_pipeline(data)
     DT_params = [{'Classifier__max_depth': list(range(1, 21)),
                     'Classifier__criterion': ['gini'],
                     'Classifier__random_state': config.RANDOM_SEED
                     }]
 
-    logit_pipeline = get_logit_classifier_pipeline()
+    logit_pipeline = get_logit_classifier_pipeline(data)
     logit_params = [{'Classifier__penalty': ['l2'],
                     'Classifier__C': np.power(10., np.arange(1)),
                      'Classifier__random_state': config.RANDOM_SEED}]
 
-    perceptron_pipeline = get_perceptron_classifier_pipeline()
+    perceptron_pipeline = get_perceptron_classifier_pipeline(data)
     perceptron_params = [{'Classifier__penalty': ['l1', 'l2'],
                           'Classifier__alpha': np.arange(0.0000, 0.1, 0.005),
                           'Classifier__max_iter': np.arange(500, 10000, 500),
@@ -341,67 +387,6 @@ if __name__ == "__main__":
     algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
 
     ####### HYPER-PARAMETER TUNING SETUP STOP ########
-
-    ####### SPECIFIC CLASSIFIER SETUP START #######
-    #Setup the classifier specific parameters for the learning and validation curves
-    #NOTE: For each class the param_range varable is only used to setup a range for the validation curve to explore.
-    print("Setting up the {} classifier...".format(
-        config.CUR_CLASSIFIER))
-    if config.CUR_CLASSIFIER == config.DUMMY:
-        cur_pipe = get_dummy_classifier_pipeline("prior")
-        cur_pipe_name = config.DUMMY
-
-    elif config.CUR_CLASSIFIER == config.MLP:
-        cur_pipe = get_MLP_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_pipe_name = config.MLP
-        param_name = 'Classifier__alpha'
-        param_range = 10.0 ** -np.arange(1, 7)
-
-    elif config.CUR_CLASSIFIER == config.KNN:
-        cur_pipe = get_KNN_classifier_pipeline(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_pipe_name = config.KNN
-        param_name = 'Classifier__n_neighbors'
-        param_range = np.arange(1, 11, 1)
-
-    elif config.CUR_CLASSIFIER == config.DT:
-        cur_pipe = get_DT_classifier_pipeline(
-            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_pipe_name = config.DT
-        param_name = 'Classifier__max_depth'
-        param_range = np.arange(1, 51)
-
-    elif config.CUR_CLASSIFIER == config.PERCEPTRON:
-        cur_pipe = get_perceptron_classifier_pipeline(
-            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_pipe_name = config.PERCEPTRON
-        param_name = 'Classifier__max_iter'
-        param_range = np.arange(500, 10000, 500)
-
-    elif config.CUR_CLASSIFIER == config.LOGISTIC:
-        cur_pipe = get_logit_classifier_pipeline(
-            config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_name = config.CUR_CLASSIFIER
-        param_name = 'Classifier__C'
-        param_range = np.arange(0.0, 1.1, 0.10)
-
-    elif config.CUR_CLASSIFIER == config.KERAS:
-        cur_pipe = get_keras_classifier_pipelin(config.CALIBRATE_PROBABILITY, cv_procedure, 'isotonic')
-        cur_pipe_name = config.CUR_CLASSIFIER
-        param_name = 'Classifier__batch_size'
-        param_range = np.array([32, 64, 128])
-
-    else:
-        print("The current classifier {} is not recognized".format(config.CUR_CLASSIFIER))
-
-    # Display some of the data as a sanity check that it is in the desired format
-    if config.VERBOSE:
-        cur_transformer = cur_pipe.named_steps['Column Transformer']
-        data_sample = data[0:3]
-        data_sample = cur_transformer.fit_transform(data_sample)
-        print("Displaying the first few rows of data transformed by the column transformer...")
-        print(data_sample[0:3, :])
-
-    ######### SPECIFIC CLASSIFIER SETUP STOP ########
 
 
     for score in config.METRIC_LIST:
@@ -586,7 +571,7 @@ if __name__ == "__main__":
         calibrated_classifier = cur_pipe
         calibrated_classifier_name = "Calibrated {}".format(config.CUR_CLASSIFIER)
         base_classifier = calibrated_classifier.named_steps['Classifier'].base_estimator
-        base_classifier = embed_classifier_in_pipeline(base_classifier)
+        base_classifier = create_classifier_pipeline(base_classifier)
         base_classifier_name = "Uncalibrated {}".format(config.CUR_CLASSIFIER)
         
         print('Training the classifiers to plot for calibration...')
@@ -610,9 +595,7 @@ if __name__ == "__main__":
 
     ########### CROSS VALIDATION SINGLE PARAMETER SETTING STOP ##########
 
-
-
-    ######## CROSS VAL CONFUSION MATRIX START ########
+    ########### CROSS VAL CONFUSION MATRIX START ##########
     #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
     display_labels = np.array(config.CLASSES)
     cmap = 'viridis'
@@ -623,8 +606,8 @@ if __name__ == "__main__":
     if config.COMPUTE_CROSS_VAL_CONFUSION_MATRIX:
         """"
         Since the plot_confusion_matrix function actually generates its own predictions based on the X value passed in, passing in the training set would not provide predictions of the folds used in cross-validation
-        #So we get the values predicted during cross validation and get the confusion matrix from that
-        #NOTE: This does not average the confusion matrix score across each fold, but instead just reports the total score across ALL predictions made, irrespective of which fold the prediction was made in.
+        So we get the values predicted during cross validation and get the confusion matrix from that
+        NOTE: This does not average the confusion matrix score across each fold, but instead just reports the total score across ALL predictions made, irrespective of which fold the prediction was made in.
         See for more detail: See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
         """
         print("Computing the confusion matrix for {} classifier".format(config.CUR_CLASSIFIER))

@@ -23,7 +23,7 @@ DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
 KERAS = 'KERAS'
 
-CUR_CLASSIFIER = KERAS
+CUR_CLASSIFIER = MLP
 
 ############### EXPERIMENT CONFIG ###############
 
@@ -33,6 +33,7 @@ RANDOM_SEED = 0
 
 # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 K = 10
+DO_REPEATED_K_FOLD = False
 
 # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
 REPEATS = 10 
@@ -46,6 +47,7 @@ VERBOSE = True
 CALIBRATE_PROBABILITY = False
 CROSS_VALIDATE_CALIBRATION_PERFROMANCE = True
 NUM_CALIBRATION_BINS = 10
+CALIBRATION_METHOD = 'isotonic'
 
 # Whether or not to run some specific analysis of the current classifier regarding how it learns
 ANALYZE_LEARNING = False
@@ -63,10 +65,10 @@ PLOT_VALIDATION_CURVES = False
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
 
 # Whether or not to report a single cross validation score for a given set of parameters
-CROSS_VALIDATE = False
+CROSS_VALIDATE = True
 
 # Whether or not to run the experiment with the held out test set to estimate generalization performance
-EVALUATE_TEST_SET = True
+EVALUATE_TEST_SET = False
 
 # Whether or not to return the training scores used during learning
 RETURN_TRAIN_SCORES = True
