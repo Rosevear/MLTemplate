@@ -352,8 +352,12 @@ if __name__ == "__main__":
         # Perform a kind of nested cross validation to get an a
         if config.CROSS_VALIDATE_CALIBRATION_PERFROMANCE:
             print("Cross validating calibrated {} classifier...".format(config.CUR_CLASSIFIER))
-            cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=True)
-            print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+            cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=config.RETURN_TRAIN_SCORES)
+            
+            if config.RETURN_TRAIN_SCORES:
+                print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+            else:
+                print("No training score computed to display...set RETURN_TRAIN_SCORES in constants.py to TRUE in order to compare scores on the dev and training sets...")
             print("Cross Validation Dev set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['test_score']), np.std(cross_val_results['test_score'])))
 
 
@@ -378,7 +382,7 @@ if __name__ == "__main__":
         calibrated_classifier = cur_pipe
         calibrated_classifier_name = "Calibrated {}".format(config.CUR_CLASSIFIER)
         base_classifier = calibrated_classifier.named_steps['Classifier'].base_estimator
-        base_classifier = create_classifier_pipeline(base_classifier, data)
+        base_classifier = models.create_classifier_pipeline(base_classifier, data)
         base_classifier_name = "Uncalibrated {}".format(config.CUR_CLASSIFIER)
         
         print('Training the classifiers to plot for calibration...')
@@ -398,8 +402,11 @@ if __name__ == "__main__":
         X_train = X_train.to_numpy()
         y_train = y_train.to_numpy()
         print("Cross validating {} classifier...".format(config.CUR_CLASSIFIER))
-        cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=True)
-        print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+        cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=config.RETURN_TRAIN_SCORES)
+        if config.RETURN_TRAIN_SCORES:
+            print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
+        else:
+            print("No training score computed to display...set RETURN_TRAIN_SCORES in constants.py to TRUE in order to compare scores on the dev and training sets...")
         print("Cross Validation Dev set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['test_score']), np.std(cross_val_results['test_score'])))
 
     ########### CROSS VALIDATION SINGLE PARAMETER SETTING STOP ##########

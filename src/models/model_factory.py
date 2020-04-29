@@ -46,7 +46,10 @@ def create_classifier_pipeline(clf, data, sparse=False):
     transformer = ColumnTransformer(transformers=[
                                     one_hot_encoding_step, standardization_step],  remainder='passthrough')
 
+    spy = utils.Spy_Pipeline()
+
     pipeline = Pipeline(steps=[(config.COLUMN_TRANSFORMER_STEP_NAME, transformer),
+                                ("Spy", spy),
                                (config.CLASSIFIER_STEP_NAME, clf)])
 
     return pipeline

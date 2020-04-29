@@ -83,7 +83,11 @@ class Spy_Pipeline(BaseEstimator, TransformerMixin):
     def transform(self, X):
         self.shape = X.shape
         
-        print("Shape of the transformed data {} ".format(X.shape))
+        print("Shape of the transformed data after passing through the pipeline: {} ".format(self.shape))
+
+        if config.VERBOSE:
+            print("Sample of the data...")
+            print(X[2, :])
         
         return X
 
