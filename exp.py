@@ -55,7 +55,7 @@ def get_cv_procedure():
             # The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
             cv_procedure = TimeSeriesSplit(n_splits=config.K)
         else:
-            # A custom class. See docstring in exp_utils.py for more detail
+            # A custom class. See docstring in process_data.py for more detail
             cv_procedure = utils.SlidingWindowTimeSeriesSplit(
                 n_splits=config.K)
 
@@ -97,20 +97,20 @@ def create_classifier_pipeline(clf, data, sparse=False):
     transformer = ColumnTransformer(transformers=[
                                     one_hot_encoding_step, standardization_step],  remainder='passthrough')
 
-    pipeline = Pipeline(steps=[('Column Transformer', transformer),
-                               ('Classifier', clf)])
+    pipeline = Pipeline(steps=[(config.COLUMN_TRANSFORMER_STEP_NAME, transformer),
+                               (config.CLASSIFIER_STEP_NAME, clf)])
 
     return pipeline
 
 
-def create_keras_model():
+def create_keras_model(input_dim):
     """
     The tensorflow keras module provides a scikit-learn classifier wrapper class that implements the scikit-learn API. See here: https://github.com/tensorflow/tensorflow/blob/e5bf8de410005de06a7ff5393fafdf832ef1d4ad/tensorflow/python/keras/wrappers/scikit_learn.py#L191-L310
     """
 	
     # Define the model structure 
     model = Sequential()
-    model.add(Dense(units=100, input_dim=36, use_bias=True, activation='relu'))
+    model.add(Dense(units=100, input_dim=input_dim, use_bias=True, activation='relu'))
     model.add(Dense(1, activation='sigmoid'))
 	
     # Compile model
@@ -118,21 +118,40 @@ def create_keras_model():
 	
     return model
 
-def get_keras_classifier_pipeline(data):
-    """
-    Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
-    """
-
-    clf = KerasClassifier(build_fn=create_keras_model, epochs=150, batch_size=32)
-
-    return create_classifier_pipeline(clf, data)
-
 def get_dummy_classifier_pipeline(data):
     """
     Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
     """
 
     clf = DummyClassifier()
+
+    return create_classifier_pipeline(clf, data)
+
+
+def get_keras_classifier_pipeline(data):
+    """
+    Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
+
+    NOTE: We grab an instance of the pipeline with a dummy classifier to run some of the data through the pipeline 
+    in order to determine the final dimension of the transformed input vectors, as Keras requires that we specify
+    the size of the input vector when first creating the model.
+    """
+
+    dummy_pipeline = get_dummy_classifier_pipeline(data)
+    data_sample = np.array(data.iloc[1, :])[np.newaxis, ...] # Need to represent the single data sample as a 1, num_features array not a 1-dimensional vector num_features long
+    print("Original data shape: {}".format(data_sample.shape))
+    
+    transformer = dummy_pipeline.named_steps[config.COLUMN_TRANSFORMER_STEP_NAME]
+    feature_vector_transformed = transformer.fit_transform(data_sample)[0]
+    print("Transformed data shape: {}".format(feature_vector_transformed.shape))
+    
+    feature_vector_input_length = len(feature_vector_transformed)
+
+    print("Inferred feature vector length for Keras model: {}".format(
+        feature_vector_input_length))
+
+    clf = KerasClassifier(build_fn=create_keras_model,
+                          input_dim=feature_vector_input_length, epochs=150, batch_size=32)
 
     return create_classifier_pipeline(clf, data)
 
@@ -302,37 +321,37 @@ if __name__ == "__main__":
     elif config.CUR_CLASSIFIER == config.MLP:
         cur_pipe = get_MLP_classifier_pipeline(data)
         cur_pipe_name = config.MLP
-        param_name = 'Classifier__alpha'
+        param_name = '{}__alpha'.format(config.CLASSIFIER_STEP_NAME)
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = get_KNN_classifier_pipeline(data)
         cur_pipe_name = config.KNN
-        param_name = 'Classifier__n_neighbors'
+        param_name = '{}__n_neighbors'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = get_DT_classifier_pipeline(data)
         cur_pipe_name = config.DT
-        param_name = 'Classifier__max_depth'
+        param_name = '{}__max_depth'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
         cur_pipe = get_perceptron_classifier_pipeline(data)
         cur_pipe_name = config.PERCEPTRON
-        param_name = 'Classifier__max_iter'
+        param_name = '{}__max_iter'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(500, 10000, 500)
 
     elif config.CUR_CLASSIFIER == config.LOGISTIC:
         cur_pipe = get_logit_classifier_pipeline(data)
         cur_name = config.CUR_CLASSIFIER
-        param_name = 'Classifier__C'
+        param_name = '{}__C'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(0.0, 1.1, 0.10)
 
     elif config.CUR_CLASSIFIER == config.KERAS:
         cur_pipe = get_keras_classifier_pipeline(data)
         cur_pipe_name = config.CUR_CLASSIFIER
-        param_name = 'Classifier__batch_size'
+        param_name = '{}__batch_size'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.array([32, 64, 128])
 
     else:
@@ -341,7 +360,7 @@ if __name__ == "__main__":
 
     # Display some of the data as a sanity check that it is in the desired format
     if config.VERBOSE:
-        cur_transformer = cur_pipe.named_steps['Column Transformer']
+        cur_transformer = cur_pipe.named_steps[config.COLUMN_TRANSFORMER_STEP_NAME]
         data_sample = data[0:3]
         data_sample = cur_transformer.fit_transform(data_sample)
         print(
@@ -354,6 +373,7 @@ if __name__ == "__main__":
     ##### HYPER-PARAMETER TUNING SETUP START ##########
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
     #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
+    #TODO: Remove hard coded classifier step name
     KNN_pipeline = get_KNN_classifier_pipeline(data)
     KNN_params = [{'Classifier__n_neighbors': list(range(5, 6)),
                     'Classifier__p': [2],''
@@ -398,7 +418,7 @@ if __name__ == "__main__":
 
                 if config.CUR_CLASSIFIER == config.DT:
                     print("Analyzing the Decision Tree algorithm...")
-                    estimator = cur_pipe.named_steps['Classifier']
+                    estimator = cur_pipe.named_steps[config.CLASSIFIER_STEP_NAME]
                     graph_data = export_graphviz(decision_tree=estimator, filled=True, rounded=True, class_names=True)
                     graph = Source(graph_data, format="png")
                     graph.render("./reports/figures/DTPlot-{}".format(score))
@@ -408,8 +428,8 @@ if __name__ == "__main__":
                     cur_pipe.set_params(Classifier__n_neighbors=6)
 
                     #Extract the steps from the pipeline
-                    knn_classifier = cur_pipe.named_steps['Classifier']
-                    knn_transformer = cur_pipe.named_steps['Column Transformer']
+                    knn_classifier = cur_pipe.named_steps[config.CLASSIFIER_STEP_NAME]
+                    knn_transformer = cur_pipe.named_steps[config.COLUMN_TRANSFORMER_STEP_NAME]
 
                     #Index into the training set to retrieve a random sample of neighbours
                     num_points_to_query = 10
@@ -571,7 +591,7 @@ if __name__ == "__main__":
         calibrated_classifier = cur_pipe
         calibrated_classifier_name = "Calibrated {}".format(config.CUR_CLASSIFIER)
         base_classifier = calibrated_classifier.named_steps['Classifier'].base_estimator
-        base_classifier = create_classifier_pipeline(base_classifier)
+        base_classifier = create_classifier_pipeline(base_classifier, data)
         base_classifier_name = "Uncalibrated {}".format(config.CUR_CLASSIFIER)
         
         print('Training the classifiers to plot for calibration...')
@@ -588,6 +608,8 @@ if __name__ == "__main__":
 
     ######### CROSS VALIDATION SINGLE PARAMETER SETTING START ##########
     if config.CROSS_VALIDATE:
+        X_train = X_train.to_numpy()
+        y_train = y_train.to_numpy()
         print("Cross validating {} classifier...".format(config.CUR_CLASSIFIER))
         cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=True)
         print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
@@ -679,8 +701,31 @@ if __name__ == "__main__":
     #NOTE: This is to be done as a final step ONLY once all of the prior modelling has been completed and we have the best model we think we can get. This next step is to get an unbiased estimate of the model's performance on unseen data
     if config.EVALUATE_TEST_SET:
         print("Training and testing the generalization score for accuracy...")
+
         X_train = X_train.to_numpy()
-        y_train = y_train.to_numpy()
+        X_test = X_test.to_numpy()
+
+        print("X-train shape {}".format(X_train.shape))
+        print("Y train shape {}".format(y_train.shape))
+
+        #print('before trans')
+        #print(X_train[0:10, :])
+        # X_train = X_train.to_numpy()[:, 1:3].astype(int)
+        # X_test = X_test.to_numpy()[:, 1:3].astype(int)
+        # print('x train mine')
+        # print(X_train.dtype)
+        # print(X_train[0:10, :])
+        # y_train = y_train.to_numpy().astype(int)
+        # y_test = y_test.to_numpy().astype(int)
+        
+        # print("X-train shape {}".format(X_train.shape))
+        # print("Y train shape {}".format(y_train.shape))
+
+        # print(X_train.dtype)
+        # model = create_keras_model()
+        # model.fit(X_train, y_train, epochs=20, batch_size=128)
+        # score = model.evaluate(X_test, y_test, batch_size=128)
+
         cur_pipe.fit(X_train, y_train)
         
         final_score = cur_pipe.score(X_test, y_test)
