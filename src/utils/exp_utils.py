@@ -3,6 +3,9 @@ import config
 import numpy as np
 import pandas as pd
 import logging
+from sklearn.utils import shuffle
+from sklearn.model_selection import KFold, TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold
+from utils.data_utils import SlidingWindowTimeSeriesSplit
 
 def freeze_random_generators(random_seed):
     """
@@ -51,6 +54,47 @@ def get_column_positions(column_headings, feature_list):
     feature_positions = [feature_to_pos[feature] for feature in feature_list] 
     
     return feature_positions
+
+
+def shuffle_targets(targets_to_shuffle):
+    """
+    Shuffle the provided targets randomly
+    """
+    print("first 10 training rows of targets...")
+    print(targets_to_shuffle[0:10])
+    shuffled_targets = shuffle(targets_to_shuffle)
+    print("first 10 rows of targets shuffled...")
+    print(shuffled_targets[0:10])
+
+    return shuffled_targets
+
+
+def get_cv_procedure():
+    """
+    Returns the cross validation procedure to use based on the current configuration settings
+    """
+
+    # NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
+    if config.IS_TIME_SERIES:
+        if config.DO_EXPANDING_WINDOW_VALIDATION:
+            # The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
+            cv_procedure = TimeSeriesSplit(n_splits=config.K)
+        else:
+            # A custom class. See docstring in process_data.py for more detail
+            cv_procedure = SlidingWindowTimeSeriesSplit(
+                n_splits=config.K)
+
+    else:
+        if config.DO_REPEATED_K_FOLD:
+            # We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedStratifiedKFold.html#sklearn-model-selection-repeatedstratifiedkfold
+            cv_procedure = RepeatedStratifiedKFold(
+                n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
+        else:
+            # See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+            cv_procedure = StratifiedKFold(
+                n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
+
+    return cv_procedure
 
 
 

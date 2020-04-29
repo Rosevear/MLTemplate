@@ -4,6 +4,7 @@ import dotenv
 import pandas as pd
 import config
 import utils
+import models
 import mlflow.sklearn
 import mlflow
 import numpy as np
@@ -12,224 +13,10 @@ from graphviz import Source
 from datetime import datetime
 
 #Scikit-learn imports
-from sklearn.compose import ColumnTransformer
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
-from sklearn.utils import shuffle
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
-from sklearn.model_selection import KFold, TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, GridSearchCV, train_test_split, validation_curve, learning_curve, cross_val_predict, cross_validate
-from sklearn.pipeline import Pipeline
-from sklearn.dummy import DummyClassifier
-from sklearn.calibration import calibration_curve, CalibratedClassifierCV
-from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.tree import export_graphviz
+from sklearn.model_selection import  GridSearchCV, train_test_split, validation_curve, cross_val_predict, cross_validate
 
-# Tensorflow imports
-import tensorflow as tf
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
-
-
-def shuffle_targets(targets_to_shuffle):
-    """
-    Shuffle the provided targets randomly
-    """
-    print("first 10 training rows of targets...")
-    print(targets_to_shuffle[0:10])
-    shuffled_targets = shuffle(targets_to_shuffle)
-    print("first 10 rows of targets shuffled...")
-    print(shuffled_targets[0:10])
-
-    return shuffled_targets
-
-def get_cv_procedure():
-    """
-    Returns the cross validation procedure to use based on the current configuration settings
-    """
-
-    # NOTE: See the following for a good visualization of the effect of different types of cross validation procedures: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
-    if config.IS_TIME_SERIES:
-        if config.DO_EXPANDING_WINDOW_VALIDATION:
-            # The sklearn TimeSeriesSplit uses an expanding window of train-test splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html#sklearn-model-selection-timeseriessplit
-            cv_procedure = TimeSeriesSplit(n_splits=config.K)
-        else:
-            # A custom class. See docstring in process_data.py for more detail
-            cv_procedure = utils.SlidingWindowTimeSeriesSplit(
-                n_splits=config.K)
-
-    else:
-        if config.DO_REPEATED_K_FOLD:
-            # We can use repeated k-fold cross validation with multiple splits of the data in order to get a more robust estimate. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedStratifiedKFold.html#sklearn-model-selection-repeatedstratifiedkfold
-            cv_procedure = RepeatedStratifiedKFold(n_splits=config.K, n_repeats=config.REPEATS, random_state=config.RANDOM_SEED)
-        else:
-            # See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
-            cv_procedure = StratifiedKFold(n_splits=config.K, shuffle=True, random_state=config.RANDOM_SEED)
-
-    return cv_procedure
-
-def create_classifier_pipeline(clf, data, sparse=False):
-    """
-    Embed the classifier clf into a machine learning pipeline
-
-    Setting sparse to false will tell the 1-hot encoder to return matrices in a compressed format for computational efficiency: See https://dziganto.github.io/Sparse-Matrices-For-Efficient-Machine-Learning/
-    
-    data is used to extract the heading columns and their positions. It can also be used to compute statistics over the data that may be needed to pass into the pipeline
-    """
-
-    column_headers = data.columns.tolist()
-
-    if config.CALIBRATE_PROBABILITY:
-        cv_procedure = get_cv_procedure()
-        clf = CalibratedClassifierCV(clf, cv_procedure, config.CALIBRATION_METHOD)
-
-
-    # This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
-    one_hot_encoding_step = ('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
-        sparse=sparse, handle_unknown='ignore'), utils.get_column_positions(column_headers, config.CATEGORICAL_COLUMNS))
-
-    # And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
-    standardization_step = ('Standardization For Interval Data',
-                            StandardScaler(), utils.get_column_positions(column_headers, config.NUMERICAL_COLUMNS))
-
-    # Transformer utility class to encode the inputs of different columns: https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html
-    transformer = ColumnTransformer(transformers=[
-                                    one_hot_encoding_step, standardization_step],  remainder='passthrough')
-
-    pipeline = Pipeline(steps=[(config.COLUMN_TRANSFORMER_STEP_NAME, transformer),
-                               (config.CLASSIFIER_STEP_NAME, clf)])
-
-    return pipeline
-
-
-def create_keras_model(input_dim):
-    """
-    The tensorflow keras module provides a scikit-learn classifier wrapper class that implements the scikit-learn API. See here: https://github.com/tensorflow/tensorflow/blob/e5bf8de410005de06a7ff5393fafdf832ef1d4ad/tensorflow/python/keras/wrappers/scikit_learn.py#L191-L310
-    """
-	
-    # Define the model structure 
-    model = Sequential()
-    model.add(Dense(units=100, input_dim=input_dim, use_bias=True, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
-	
-    # Compile model
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-	
-    return model
-
-def get_dummy_classifier_pipeline(data):
-    """
-    Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
-    """
-
-    clf = DummyClassifier()
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_keras_classifier_pipeline(data):
-    """
-    Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
-
-    NOTE: We grab an instance of the pipeline with a dummy classifier to run some of the data through the pipeline 
-    in order to determine the final dimension of the transformed input vectors, as Keras requires that we specify
-    the size of the input vector when first creating the model.
-    """
-
-    dummy_pipeline = get_dummy_classifier_pipeline(data)
-    data_sample = np.array(data.iloc[1, :])[np.newaxis, ...] # Need to represent the single data sample as a 1, num_features array not a 1-dimensional vector num_features long
-    print("Original data shape: {}".format(data_sample.shape))
-    
-    transformer = dummy_pipeline.named_steps[config.COLUMN_TRANSFORMER_STEP_NAME]
-    feature_vector_transformed = transformer.fit_transform(data_sample)[0]
-    print("Transformed data shape: {}".format(feature_vector_transformed.shape))
-    
-    feature_vector_input_length = len(feature_vector_transformed)
-
-    print("Inferred feature vector length for Keras model: {}".format(
-        feature_vector_input_length))
-
-    clf = KerasClassifier(build_fn=create_keras_model,
-                          input_dim=feature_vector_input_length, epochs=150, batch_size=32)
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_MLP_classifier_pipeline(data):
-    """
-    MLP Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier
-    """
-
-    clf = clf = MLPClassifier(hidden_layer_sizes=(100,),
-                              activation='relu',
-                              solver='adam',
-                              alpha=0.0001,  # L2 regularization parameter
-                              batch_size='auto',
-                              learning_rate='adaptive',
-                              learning_rate_init=0.001,
-                              power_t=0.5,  # Only used for invscaling option of learning_rate
-                              momentum=0.9,  # Only used for SGD
-                              nesterovs_momentum=True,  # Only used for SGD and momentum > 0
-                              beta_1=0.9,  # Both betas are paramters for the Adam solver
-                              beta_2=0.999,
-                              epsilon=1e-8,  # Adam numerical stability constant
-                              max_iter=200,
-                              early_stopping=True,
-                              verbose=False,
-                              shuffle=True,
-                              random_state=config.RANDOM_SEED)
-
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_KNN_classifier_pipeline(data):
-    """
-    #K-Nearest Neighbours: https://scikit-learn.org/stable/modules/neighbors.html#id6
-    """
-    clf = KNeighborsClassifier(n_neighbors=5)
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_DT_classifier_pipeline(data):
-    """
-     Decision Tree Classifier: https://scikit-learn.org/stable/modules/tree.html
-    """
-
-    clf = DecisionTreeClassifier(max_depth=20,
-                                 random_state=config.RANDOM_SEED)
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_logit_classifier_pipeline(data):
-    """
-    Logistic Regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-    """
-    clf = LogisticRegression()
-
-    return create_classifier_pipeline(clf, data)
-
-
-def get_perceptron_classifier_pipeline(data):
-    """
-    Perceptron: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html#sklearn.linear_model.Perceptron
-    """
-    
-    clf = Perceptron(penalty='l1',
-                     alpha=0.0001,
-                     fit_intercept=True,
-                     max_iter=1000,
-                     tol=1e-3,
-                     eta0=1,
-                     early_stopping=True,
-                     validation_fraction=0.1,
-                     n_iter_no_change=5,
-                     random_state=config.RANDOM_SEED)
-
-    return create_classifier_pipeline(clf, data)
 
 if __name__ == "__main__":
 
@@ -290,12 +77,12 @@ if __name__ == "__main__":
     num_features = X_train.shape[1]
 
     if config.SHUFFLE_TARGETS:
-        y_train = shuffle_targets(y_train)
+        y_train = utils.shuffle_targets(y_train)
         if config.IS_CROSS_TRAIN:
             # Shuffle the original data-set targets for when cross-training
-            targets = shuffle_targets(targets)
+            targets = utils.shuffle_targets(targets)
 
-    cv_procedure = get_cv_procedure()
+    cv_procedure = utils.get_cv_procedure()
 
     if config.VERBOSE:
         print(
@@ -315,41 +102,41 @@ if __name__ == "__main__":
     print("Setting up the {} classifier...".format(
         config.CUR_CLASSIFIER))
     if config.CUR_CLASSIFIER == config.DUMMY:
-        cur_pipe = get_dummy_classifier_pipeline(data)
+        cur_pipe = models.get_dummy_classifier_pipeline(data)
         cur_pipe_name = config.DUMMY
 
     elif config.CUR_CLASSIFIER == config.MLP:
-        cur_pipe = get_MLP_classifier_pipeline(data)
+        cur_pipe = models.get_MLP_classifier_pipeline(data)
         cur_pipe_name = config.MLP
         param_name = '{}__alpha'.format(config.CLASSIFIER_STEP_NAME)
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
-        cur_pipe = get_KNN_classifier_pipeline(data)
+        cur_pipe = models.get_KNN_classifier_pipeline(data)
         cur_pipe_name = config.KNN
         param_name = '{}__n_neighbors'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
-        cur_pipe = get_DT_classifier_pipeline(data)
+        cur_pipe = models.get_DT_classifier_pipeline(data)
         cur_pipe_name = config.DT
         param_name = '{}__max_depth'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
-        cur_pipe = get_perceptron_classifier_pipeline(data)
+        cur_pipe = models.get_perceptron_classifier_pipeline(data)
         cur_pipe_name = config.PERCEPTRON
         param_name = '{}__max_iter'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(500, 10000, 500)
 
     elif config.CUR_CLASSIFIER == config.LOGISTIC:
-        cur_pipe = get_logit_classifier_pipeline(data)
+        cur_pipe = models.get_logit_classifier_pipeline(data)
         cur_name = config.CUR_CLASSIFIER
         param_name = '{}__C'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(0.0, 1.1, 0.10)
 
     elif config.CUR_CLASSIFIER == config.KERAS:
-        cur_pipe = get_keras_classifier_pipeline(data)
+        cur_pipe = models.get_keras_classifier_pipeline(data)
         cur_pipe_name = config.CUR_CLASSIFIER
         param_name = '{}__batch_size'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.array([32, 64, 128])
@@ -372,36 +159,36 @@ if __name__ == "__main__":
 
     ##### HYPER-PARAMETER TUNING SETUP START ##########
     #Setup classifier pipelines and hyper-parameters to search through for tuning each classifier
-    #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
-    #TODO: Remove hard coded classifier step name
-    KNN_pipeline = get_KNN_classifier_pipeline(data)
-    KNN_params = [{'Classifier__n_neighbors': list(range(5, 6)),
-                    'Classifier__p': [2],''
-                    'Classifier__random_state': config.RANDOM_SEED
-                    }] 
-    
-    DT_pipeline = get_DT_classifier_pipeline(data)
-    DT_params = [{'Classifier__max_depth': list(range(1, 21)),
-                    'Classifier__criterion': ['gini'],
-                    'Classifier__random_state': config.RANDOM_SEED
-                    }]
+    #NOTE: When using a pipeline as the estimator with GridSearchCV, the parameters need to be named according to a specific syntax of the form <pipeline_step_name>__<parameter>: value. 
+    # See https://stackoverflow.com/questions/48726695/error-when-using-scikit-learn-to-use-pipelines
+    KNN_pipeline = models.get_KNN_classifier_pipeline(data)
+    KNN_params = [{'{}__n_neighbors'.format(config.CLASSIFIER_STEP_NAME): list(range(5, 6)),
+                   '{}__p'.format(config.CLASSIFIER_STEP_NAME): [2], ''
+                   '{}__random_state'.format(config.CLASSIFIER_STEP_NAME): config.RANDOM_SEED
+                   }]
 
-    logit_pipeline = get_logit_classifier_pipeline(data)
-    logit_params = [{'Classifier__penalty': ['l2'],
-                    'Classifier__C': np.power(10., np.arange(1)),
-                     'Classifier__random_state': config.RANDOM_SEED}]
+    DT_pipeline = models.get_DT_classifier_pipeline(data)
+    DT_params = [{'{}__max_depth'.format(config.CLASSIFIER_STEP_NAME): list(range(1, 21)),
+                  '{}__criterion'.format(config.CLASSIFIER_STEP_NAME): ['gini'],
+                  '{}__random_state'.format(config.CLASSIFIER_STEP_NAME): config.RANDOM_SEED
+                  }]
 
-    perceptron_pipeline = get_perceptron_classifier_pipeline(data)
-    perceptron_params = [{'Classifier__penalty': ['l1', 'l2'],
-                          'Classifier__alpha': np.arange(0.0000, 0.1, 0.005),
-                          'Classifier__max_iter': np.arange(500, 10000, 500),
-                          'Classifier__eta0': [0.01, 0.1, 1],
-                          'Classifier__tol': [1e-3, None],
-                          'Classifier__early_stopping': [True],
-                          'Classifier__validation_fraction': [0.1],
-                          'Classifier__shuffle': [True],
-                          'Classifier__n_iter_no_change': [5, 10],
-                          'Classifier__random_state': config.RANDOM_SEED}]
+    logit_pipeline = models.get_logit_classifier_pipeline(data)
+    logit_params = [{'{}__penalty'.format(config.CLASSIFIER_STEP_NAME): ['l2'],
+                     '{}__C'.format(config.CLASSIFIER_STEP_NAME): np.power(10., np.arange(1)),
+                     '{}__random_state'.format(config.CLASSIFIER_STEP_NAME): config.RANDOM_SEED}]
+
+    perceptron_pipeline = models.get_perceptron_classifier_pipeline(data)
+    perceptron_params = [{'{}__penalty'.format(config.CLASSIFIER_STEP_NAME): ['l1', 'l2'],
+                          '{}__alpha'.format(config.CLASSIFIER_STEP_NAME): np.arange(0.0000, 0.1, 0.005),
+                          '{}__max_iter'.format(config.CLASSIFIER_STEP_NAME): np.arange(500, 10000, 500),
+                          '{}__eta0'.format(config.CLASSIFIER_STEP_NAME): [0.01, 0.1, 1],
+                          '{}__tol'.format(config.CLASSIFIER_STEP_NAME): [1e-3, None],
+                          '{}__early_stopping'.format(config.CLASSIFIER_STEP_NAME): [True],
+                          '{}__validation_fraction'.format(config.CLASSIFIER_STEP_NAME): [0.1],
+                          '{}__shuffle'.format(config.CLASSIFIER_STEP_NAME): [True],
+                          '{}__n_iter_no_change'.format(config.CLASSIFIER_STEP_NAME): [5, 10],
+                          '{}__random_state'.format(config.CLASSIFIER_STEP_NAME): config.RANDOM_SEED}]
 
     #Match up the pipelines with their respective hyper-parameter grid and name them
     algorithm_param_combinations = zip((KNN_params, DT_params, logit_params), (KNN_pipeline, DT_pipeline, logit_pipeline), ('KNN', 'DTree', 'logit'))
