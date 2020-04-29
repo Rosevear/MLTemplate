@@ -21,9 +21,16 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
-KERAS = 'KERAS'
 
-CUR_CLASSIFIER = DT
+KERAS_CLASSIFIER = 'KERAS_CLASSIFIER'
+
+# Whether the pipeline should try and infer the final input shape 
+INFER_KERAS_INPUT_SHAPE = True
+
+# The shape of the feature vector for Keras models needs to be specified prior to training
+KERAS_INPUT_SHAPE = None
+
+CUR_CLASSIFIER = KERAS_CLASSIFIER
 
 ####### PIPLINE STEP NAMES ########
 COLUMN_TRANSFORMER_STEP_NAME = "Column Transformer"
@@ -31,12 +38,14 @@ CLASSIFIER_STEP_NAME = "Classifier"
 
 ############### EXPERIMENT CONFIG ###############
 
+# What percentage of the data that should be used as the training set
 TRAINING_SET_SIZE = 0.80
 
+# The random seed used to enforce determinism in the experiment. See exp_utils.py for more info.
 RANDOM_SEED = 0
 
 # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
-K = 2
+K = 10
 DO_REPEATED_K_FOLD = False
 
 # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
@@ -45,7 +54,8 @@ REPEATS = 1
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
 
-VERBOSE = False
+# Whether to diplay additional information during the running of the experiment, chiefly for diagnostic purposes
+VERBOSE = True
 
 # Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
 CALIBRATE_PROBABILITY = False
@@ -75,7 +85,7 @@ CROSS_VALIDATE = True
 EVALUATE_TEST_SET = False
 
 # Whether or not to return the training scores used during learning
-RETURN_TRAIN_SCORES = False
+RETURN_TRAIN_SCORES = True
 
 # Shuffle the targets of the training set in order to test if the algorithm is still getting some type of signal (probably a sign of data leakage if it is)
 SHUFFLE_TARGETS = False

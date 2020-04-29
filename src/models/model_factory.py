@@ -34,9 +34,12 @@ def create_classifier_pipeline(clf, data, sparse=False):
         clf = CalibratedClassifierCV(clf, cv_procedure, config.CALIBRATION_METHOD)
 
 
+    # Find all of the values in the training set for each type of categorical variable
+    categories = [np.sort(data[category].unique()) for category in config.CATEGORICAL_COLUMNS]
+    
     # This column transformer uses a 1-hot encoder for categorical data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
-    one_hot_encoding_step = ('One Hot Encoding Transform for Categorical Data', OneHotEncoder(
-        sparse=sparse, handle_unknown='ignore'), utils.get_column_positions(column_headers, config.CATEGORICAL_COLUMNS))
+    one_hot_encoding_step = ('One Hot Encoding Transform for Categorical Data', OneHotEncoder(categories=categories,
+        sparse=sparse, dtype=np.float, handle_unknown='ignore'), utils.get_column_positions(column_headers, config.CATEGORICAL_COLUMNS))
 
     # And a Standard Scaler for numerical interval data: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
     standardization_step = ('Standardization For Interval Data',
@@ -46,10 +49,7 @@ def create_classifier_pipeline(clf, data, sparse=False):
     transformer = ColumnTransformer(transformers=[
                                     one_hot_encoding_step, standardization_step],  remainder='passthrough')
 
-    spy = utils.Spy_Pipeline()
-
     pipeline = Pipeline(steps=[(config.COLUMN_TRANSFORMER_STEP_NAME, transformer),
-                                ("Spy", spy),
                                (config.CLASSIFIER_STEP_NAME, clf)])
 
     return pipeline
@@ -70,15 +70,6 @@ def create_keras_model(input_dim):
 	
     return model
 
-def get_dummy_classifier_pipeline(data):
-    """
-    Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
-    """
-
-    clf = DummyClassifier()
-
-    return create_classifier_pipeline(clf, data)
-
 
 def get_keras_classifier_pipeline(data):
     """
@@ -89,24 +80,38 @@ def get_keras_classifier_pipeline(data):
     the size of the input vector when first creating the model.
     """
 
-    dummy_pipeline = get_dummy_classifier_pipeline(data)
-    data_sample = np.array(data.iloc[1, :])[np.newaxis, ...] # Need to represent the single data sample as a 1, num_features array not a 1-dimensional vector num_features long
-    print("Original data shape: {}".format(data_sample.shape))
-    
-    transformer = dummy_pipeline.named_steps[config.COLUMN_TRANSFORMER_STEP_NAME]
-    feature_vector_transformed = transformer.fit_transform(data_sample)[0]
-    print("Transformed data shape: {}".format(feature_vector_transformed.shape))
-    
-    feature_vector_input_length = len(feature_vector_transformed)
+    if config.INFER_KERAS_INPUT_SHAPE:
+        spy = utils.Pipeline_Spy()
+        pipeline = create_classifier_pipeline(spy, data)
+        
+        # Need to represent the single data sample as a 1 by num_features array not a 1-dimensional vector num_features long
+        data_sample = np.array(data.iloc[1, :])[np.newaxis, ...] 
+        print("Original data shape: {}".format(data_sample.shape))
+        
+        feature_vector_transformed = pipeline.fit_transform(data_sample)[0]
+        print("Transformed data shape: {}".format(feature_vector_transformed.shape))
+        
+        feature_vector_input_length = len(feature_vector_transformed)
 
-    print("Inferred feature vector length for Keras model: {}".format(
-        feature_vector_input_length))
+        print("Inferred feature vector length for Keras model: {}".format(
+            feature_vector_input_length))
+    else:
+        feature_vector_input_length = config.KERAS_INPUT_SHAPE
 
     clf = KerasClassifier(build_fn=create_keras_model,
                           input_dim=feature_vector_input_length, epochs=150, batch_size=32)
 
     return create_classifier_pipeline(clf, data)
 
+
+def get_dummy_classifier_pipeline(data):
+    """
+    Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
+    """
+
+    clf = DummyClassifier()
+
+    return create_classifier_pipeline(clf, data)
 
 def get_MLP_classifier_pipeline(data):
     """

@@ -57,11 +57,13 @@ if __name__ == "__main__":
         stratify_by = targets
         train_sizes = np.arange(0.05, 1.00, 0.05)
     
-    #Visual check on the data format
+    # Visual check on the data format
     print("Displaying the columns of the data...")
     print(list(data))
     print("Displaying the first few rows of the data...")
     print(data.head(10))
+
+    print("Total size of data set: {} rows and {} columns".format(len(data.index), len(data.columns)))
     
     print("Splitting the whole data set into a training set and a heldout test set...")
     X_train, X_test, y_train, y_test = train_test_split(data, targets,
@@ -135,7 +137,7 @@ if __name__ == "__main__":
         param_name = '{}__C'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(0.0, 1.1, 0.10)
 
-    elif config.CUR_CLASSIFIER == config.KERAS:
+    elif config.CUR_CLASSIFIER == config.KERAS_CLASSIFIER:
         cur_pipe = models.get_keras_classifier_pipeline(data)
         cur_pipe_name = config.CUR_CLASSIFIER
         param_name = '{}__batch_size'.format(config.CLASSIFIER_STEP_NAME)

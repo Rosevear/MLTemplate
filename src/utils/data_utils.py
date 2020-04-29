@@ -75,7 +75,7 @@ class SlidingWindowTimeSeriesSplit():
             mid = int(config.TRAINING_SET_SIZE * (stop - start)) + start
             yield indices[start: mid], indices[mid: stop]
 
-class Spy_Pipeline(BaseEstimator, TransformerMixin):
+class Pipeline_Spy(BaseEstimator, TransformerMixin):
     """
     To use as a pseudo-step in an sklearn pipline, in order to spy on the transformations made to the data prior to being passed to the final estimator
     """
@@ -86,10 +86,15 @@ class Spy_Pipeline(BaseEstimator, TransformerMixin):
         print("Shape of the transformed data after passing through the pipeline: {} ".format(self.shape))
 
         if config.VERBOSE:
-            print("Sample of the data...")
-            print(X[2, :])
+            print("Sample of the data which is of type {}".format(X.dtype))
+            print(X[0, :])
         
         return X
 
     def fit(self, X, y=None, **fit_params):
+        
         return self
+
+    def fit_transform(self, X, y=None, **fit_params):
+
+        return self.fit(X).transform(X)
