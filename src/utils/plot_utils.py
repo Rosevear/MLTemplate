@@ -99,6 +99,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             fit_times[i, :] = cross_val_results['fit_time']
             
     else:
+        # See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html
         train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator=estimator, X=X, y=y, train_sizes=train_sizes, shuffle=shuffle, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbose, exploit_incremental_learning=False, return_times=True)
 
     train_scores_mean = np.mean(train_scores, axis=1)
@@ -144,6 +145,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
 
 def plot_validation_curve(estimator, X, y, param_name, param_range, scoring, cv, n_jobs, verbose, title):
     """
+    https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.validation_curve.html
     """
 
     train_scores, test_scores = validation_curve(estimator=estimator, X=X, y=y, param_name=param_name,
@@ -179,6 +181,7 @@ def plot_calibration_curve(clf_list, X_test, y_test):
     """
     Plots calibration curves and computes summary statistics for each classifier provided in clf_list, where clf_list is a list of tuples in the form (estimator, str)
     Assumes that the provided classifiers have already been fit on a training and (where applicable) calibration set
+    See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.calibration_curve.html
     """
 
     plt.figure(1, figsize=(10, 10))
