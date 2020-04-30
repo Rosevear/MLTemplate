@@ -36,13 +36,18 @@ CUR_CLASSIFIER = KERAS_CLASSIFIER
 COLUMN_TRANSFORMER_STEP_NAME = "Column Transformer"
 CLASSIFIER_STEP_NAME = "Classifier"
 
+####### RUNTIME ENV ######
+# The random seed used to enforce determinism in the experiment. See exp_utils.py for more info.
+RANDOM_SEED = 0
+
+# Whether or not to use a gpu for training
+USE_GPU = False #NOTE: THIS IS NOT IMPLEMENTED YET
+
+
 ############### EXPERIMENT CONFIG ###############
 
 # What percentage of the data that should be used as the training set
 TRAINING_SET_SIZE = 0.80
-
-# The random seed used to enforce determinism in the experiment. See exp_utils.py for more info.
-RANDOM_SEED = 0
 
 # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 K = 10

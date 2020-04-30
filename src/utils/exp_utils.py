@@ -1,4 +1,5 @@
 import random
+import os
 import config
 import numpy as np
 import pandas as pd
@@ -6,6 +7,7 @@ import logging
 from sklearn.utils import shuffle
 from sklearn.model_selection import KFold, TimeSeriesSplit, RepeatedKFold, StratifiedKFold, RepeatedStratifiedKFold
 from utils.data_utils import SlidingWindowTimeSeriesSplit
+import tensorflow as tf
 
 def freeze_random_generators(random_seed):
     """
@@ -16,12 +18,20 @@ def freeze_random_generators(random_seed):
 
     The standard library random package
     The numpy random package 
-    NOTE: The random seed state for numpy is not threadsafe, meaning it is shared across different threads run concurrently. See https://stackoverflow.com/questions/31057197/should-i-use-random-seed-or-numpy-random-seed-to-control-random-number-gener
-    TODO: Tensorflow See https://stackoverflow.com/a/59722305/5106849
+    NOTE: The random seed state for numpy is not threadsafe, meaning it is shared across different threads run concurrently. 
+    See https://stackoverflow.com/questions/31057197/should-i-use-random-seed-or-numpy-random-seed-to-control-random-number-gener
     """
 
     random.seed(random_seed)
     np.random.seed(random_seed)
+    
+    # See https://www.tensorflow.org/api_docs/python/tf/random/set_seed
+    tf.set_seed(random_seed)
+
+    if config.USE_GPU:
+        # See https: // stackoverflow.com/a/59722305/5106849 and https://github.com/NVIDIA/tensorflow-determinism
+        os.environ['PYTHONHASHSEED'] = str(random_seed)
+        os.environ['TF_CUDNN_DETERMINISTIC'] = '1'  # new flag present in tf 2.0+
 
 
 def setup_logger():

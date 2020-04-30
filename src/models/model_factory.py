@@ -87,7 +87,7 @@ def get_keras_classifier_pipeline(data):
         spy = utils.Pipeline_Spy()
         pipeline = create_classifier_pipeline(spy, data)
         
-        # Need to represent the single data sample as a 1 by num_features array not a 1-dimensional vector num_features long
+        # Need to represent the single data sample as a 1 by num_features array, not a 1-dimensional vector num_features long
         data_sample = np.array(data.iloc[1, :])[np.newaxis, ...] 
         print("Original data shape: {}".format(data_sample.shape))
         
