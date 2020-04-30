@@ -49,7 +49,7 @@ K = 10
 DO_REPEATED_K_FOLD = False
 
 # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
-REPEATS = 1 
+REPEATS = 10
 
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']

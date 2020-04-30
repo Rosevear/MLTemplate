@@ -1,7 +1,7 @@
 import config
 import utils
 import numpy as np
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
@@ -49,7 +49,10 @@ def create_classifier_pipeline(clf, data, sparse=False):
     transformer = ColumnTransformer(transformers=[
                                     one_hot_encoding_step, standardization_step],  remainder='passthrough')
 
+    datatype_transform = FunctionTransformer(utils.convert_array_to_dtype)
+
     pipeline = Pipeline(steps=[(config.COLUMN_TRANSFORMER_STEP_NAME, transformer),
+                                ('datatypeTransform', datatype_transform),
                                (config.CLASSIFIER_STEP_NAME, clf)])
 
     return pipeline

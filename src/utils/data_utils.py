@@ -98,3 +98,10 @@ class Pipeline_Spy(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y=None, **fit_params):
 
         return self.fit(X).transform(X)
+
+
+def convert_array_to_dtype(X):
+    """
+    """
+
+    return X.astype(dtype=np.float)
