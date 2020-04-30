@@ -296,7 +296,7 @@ if __name__ == "__main__":
                                 scoring=score,
                                 n_jobs=-1,
                                 cv=cv_procedure,
-                                verbose=1,
+                                verbose=config.VERBOSE,
                                 refit=False,
                                 return_train_score=config.RETURN_TRAIN_SCORES)
                 gcv.fit(X_train, y_train) #NOTE: Although we pass in X_train and y_train, this should be split into a train and dev set internally by the gridSearchCV according to the cv argument
@@ -332,7 +332,7 @@ if __name__ == "__main__":
         print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
         learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
         learning_plot = utils.plot_learning_curve(estimator=cur_pipe, title=learning_curve_title, X=X_train,
-                                                    y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+                                                    y=y_train, train_sizes=train_sizes, shuffle=True, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=config.VERBOSE)
         learning_plot.show()
 
     #Plots the training and validation set scores for various values of a single hyper-parameter to explore its bias-variance trade off
@@ -341,7 +341,7 @@ if __name__ == "__main__":
         validation_curve_title = "{} Validation Curve".format(
             cur_pipe_name)
         validation_plot = utils.plot_validation_curve(estimator=cur_pipe, title=validation_curve_title, X=X_train, y=y_train,
-                                                        param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=1)
+                                                        param_name=param_name, param_range=param_range, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=config.VERBOSE)
         validation_plot.show()
 
     ########## LEARNING AND VALIDATION CURVES STOP ###########
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         # Perform a kind of nested cross validation to get an a
         if config.CROSS_VALIDATE_CALIBRATION_PERFROMANCE:
             print("Cross validating calibrated {} classifier...".format(config.CUR_CLASSIFIER))
-            cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=config.RETURN_TRAIN_SCORES)
+            cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=config.VERBOSE, return_train_score=config.RETURN_TRAIN_SCORES)
             
             if config.RETURN_TRAIN_SCORES:
                 print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
@@ -404,7 +404,7 @@ if __name__ == "__main__":
         X_train = X_train.to_numpy()
         y_train = y_train.to_numpy()
         print("Cross validating {} classifier...".format(config.CUR_CLASSIFIER))
-        cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=0, return_train_score=config.RETURN_TRAIN_SCORES)
+        cross_val_results = cross_validate(estimator=cur_pipe, X=X_train, y=y_train, scoring=score, cv=cv_procedure, n_jobs=-1, verbose=config.VERBOSE, return_train_score=config.RETURN_TRAIN_SCORES)
         if config.RETURN_TRAIN_SCORES:
             print("Cross Validation Training set results. Mean: {} Standard Deviation: {}".format(np.mean(cross_val_results['train_score']), np.std(cross_val_results['train_score'])))
         else:
@@ -429,7 +429,7 @@ if __name__ == "__main__":
         See for more detail: See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn-model-selection-cross-val-predict
         """
         print("Computing the confusion matrix for {} classifier".format(config.CUR_CLASSIFIER))
-        predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=1)
+        predictions = cross_val_predict(estimator=cur_pipe, X=X_train, y=y_train, cv=cv_procedure, n_jobs=-1, verbose=config.VERBOSE)
         unique, counts = np.unique(predictions, return_counts=True)
         prediction_counts = dict(zip(unique, counts))
         print("Classifier predictions...")

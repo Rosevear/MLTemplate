@@ -8,8 +8,8 @@ INTERIM_DATA_DIR = ROOT_DIR / "data/interim"
 PROCESSED_DATA_DIR = ROOT_DIR / "data/processed"
 PROCESSED_FILE_SAVE_SUFFIX = "_time_series"
 PROCESSED_FILE_EXTENSION = ".csv"
-CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
-#CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08_time_series.csv"
+#CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08.csv"
+CUR_DATA_FILE = "Oracle_BTU_Live_All_Data_2020-04-08_time_series.csv"
 #CROSS_TEST_FILE = "NPEIAllFailures.csv"
 CROSS_TEST_FILE =  "Medicine_Hat_Full_Data_2020-04-09.csv"
 
@@ -70,10 +70,10 @@ ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 
 # Whether to plot a learning curve to display how the algorithm fares given more training data
-PLOT_LEARNING_CURVES = False
+PLOT_LEARNING_CURVES = True
 
 # Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
-PLOT_VALIDATION_CURVES = False
+PLOT_VALIDATION_CURVES = True
 
 # Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False
@@ -91,7 +91,7 @@ RETURN_TRAIN_SCORES = True
 SHUFFLE_TARGETS = False
 
 # Whether or not the data should be treated as time series for the purposes of splitting and evaluation
-IS_TIME_SERIES = False
+IS_TIME_SERIES = True
 DO_EXPANDING_WINDOW_VALIDATION = True
 TIME_SERIES_COLUMN = 'Date'
 

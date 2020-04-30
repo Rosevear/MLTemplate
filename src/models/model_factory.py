@@ -136,7 +136,7 @@ def get_MLP_classifier_pipeline(data):
                               epsilon=1e-8,  # Adam numerical stability constant
                               max_iter=200,
                               early_stopping=True,
-                              verbose=False,
+                              verbose=config.VERBOSE,
                               shuffle=True,
                               random_state=config.RANDOM_SEED)
 

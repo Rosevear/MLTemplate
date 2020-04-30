@@ -6,7 +6,7 @@ from sklearn.metrics import brier_score_loss
 import matplotlib.pyplot as plt
 
 #NOTE: This code has been modified from its original from after taken from here: https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
-def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, cv, n_jobs, verbose=1, axes=None, ylim=None):
+def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, cv, n_jobs, verbose=config.VERBOSE, axes=None, ylim=None):
 
     """
     Generate 3 plots: the test and training learning curve, the training
@@ -92,7 +92,7 @@ def plot_learning_curve(estimator, title, X, y, train_sizes, shuffle, scoring, c
             cur_train_data = X.iloc[0:cur_train_size + 1, :]
             cur_train_targets = y.iloc[0:cur_train_size + 1]
             
-            cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=0, return_train_score=True)
+            cross_val_results = cross_validate(estimator=estimator, X=cur_train_data, y=cur_train_targets, scoring=scoring, cv=cv, n_jobs=-1, verbose=config.VERBOSE, return_train_score=True)
             
             train_scores[i, :] = cross_val_results['train_score']
             test_scores[i, :] = cross_val_results['test_score']
