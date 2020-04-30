@@ -29,9 +29,8 @@ def freeze_random_generators(random_seed):
     tf.set_seed(random_seed)
 
     if config.USE_GPU:
-        # See https: // stackoverflow.com/a/59722305/5106849 and https://github.com/NVIDIA/tensorflow-determinism
-        os.environ['PYTHONHASHSEED'] = str(random_seed)
-        os.environ['TF_CUDNN_DETERMINISTIC'] = '1'  # new flag present in tf 2.0+
+        # See  https://github.com/NVIDIA/tensorflow-determinism
+        os.environ['TF_DETERMINISTIC_OPS'] = '1'
 
 
 def setup_logger():
