@@ -13,7 +13,7 @@ from graphviz import Source
 from datetime import datetime
 
 #Scikit-learn imports
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn.tree import export_graphviz
 from sklearn.model_selection import  GridSearchCV, train_test_split, validation_curve, cross_val_predict, cross_validate
 
@@ -504,30 +504,14 @@ if __name__ == "__main__":
         print("X-train shape {}".format(X_train.shape))
         print("Y train shape {}".format(y_train.shape))
 
-        #print('before trans')
-        #print(X_train[0:10, :])
-        # X_train = X_train.to_numpy()[:, 1:3].astype(int)
-        # X_test = X_test.to_numpy()[:, 1:3].astype(int)
-        # print('x train mine')
-        # print(X_train.dtype)
-        # print(X_train[0:10, :])
-        # y_train = y_train.to_numpy().astype(int)
-        # y_test = y_test.to_numpy().astype(int)
-        
-        # print("X-train shape {}".format(X_train.shape))
-        # print("Y train shape {}".format(y_train.shape))
-
-        # print(X_train.dtype)
-        # model = create_keras_model()
-        # model.fit(X_train, y_train, epochs=20, batch_size=128)
-        # score = model.evaluate(X_test, y_test, batch_size=128)
-
         cur_pipe.fit(X_train, y_train)
         
         final_score = cur_pipe.score(X_test, y_test)
         print("Test generalization score: {} ".format(final_score))
         
         print("Plotting the confusion matrix for the test set...")
+
+        # See https://scikit-learn.org/stable/modules/generated/sklearn.metrics.plot_confusion_matrix.html
         plot_confusion_matrix(estimator=cur_pipe, X=X_test, y_true=y_test, labels=display_labels, normalize='all', include_values=include_values, cmap=cmap, ax=ax, xticks_rotation=xticks_rotation, values_format=values_format)
         plt.show()
     ######### GENERALIZATION TEST STOP ########

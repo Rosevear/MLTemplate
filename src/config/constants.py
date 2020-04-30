@@ -70,10 +70,10 @@ ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 
 # Whether to plot a learning curve to display how the algorithm fares given more training data
-PLOT_LEARNING_CURVES = True
+PLOT_LEARNING_CURVES = False
 
 # Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
-PLOT_VALIDATION_CURVES = True
+PLOT_VALIDATION_CURVES = False
 
 # Whether or not to compute the confusion matrix yielded by the predictions made during cross validation
 COMPUTE_CROSS_VAL_CONFUSION_MATRIX = False

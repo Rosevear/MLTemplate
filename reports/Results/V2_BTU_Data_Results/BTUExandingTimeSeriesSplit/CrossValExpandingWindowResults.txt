@@ -9,3 +9,7 @@ Cross Validation Dev set results. Mean: 0.8903800786369593 Standard Deviation: 0
 Cross validating MLP classifier...
 Cross Validation Training set results. Mean: 0.9641596436327777 Standard Deviation: 0.0133609615920436
 Cross Validation Dev set results. Mean: 0.8842463958060289 Standard Deviation: 0.07445048233557566
+
+Cross Validating Keras classifier
+Cross Validation Training set results. Mean: 0.9929503399871157 Standard Deviation: 0.0022973623758314157
+Cross Validation Dev set results. Mean: 0.8334731323722149 Standard Deviation: 0.08598384473806658
