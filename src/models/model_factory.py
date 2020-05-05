@@ -78,12 +78,9 @@ def create_keras_model(input_dim):
 def get_keras_classifier_pipeline(data):
     """
     Keras Classifier: https://www.tensorflow.org/api_docs/python/tf/keras/wrappers/scikit_learn/KerasClassifier
-
-    NOTE: We grab an instance of the pipeline with a dummy classifier to run some of the data through the pipeline 
-    in order to determine the final dimension of the transformed input vectors, as Keras requires that we specify
-    the size of the input vector when first creating the model.
     """
 
+    # Infer the shape of the feature vector size after passing in some testing through the pipeline ot transform it
     if config.INFER_KERAS_INPUT_SHAPE:
         spy = utils.Pipeline_Spy()
         pipeline = create_classifier_pipeline(spy, data)
