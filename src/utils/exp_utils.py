@@ -26,7 +26,7 @@ def freeze_random_generators(random_seed):
     np.random.seed(random_seed)
     
     # See https://www.tensorflow.org/api_docs/python/tf/random/set_seed
-    tf.set_seed(random_seed)
+    tf.random.set_seed(random_seed)
 
     if config.USE_GPU:
         # See  https://github.com/NVIDIA/tensorflow-determinism

@@ -21,6 +21,8 @@ PERCEPTRON = "PERCEPTRON"
 MLP = "MLP"
 DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
+NB = "NAIVE BAYES"
+PA = "PASSIVE AGRESSIVE"
 
 KERAS_CLASSIFIER = 'KERAS_CLASSIFIER'
 
@@ -30,7 +32,7 @@ INFER_KERAS_INPUT_SHAPE = True
 # The shape of the feature vector for Keras models needs to be specified prior to training
 KERAS_INPUT_SHAPE = None
 
-CUR_CLASSIFIER = KERAS_CLASSIFIER
+CUR_CLASSIFIER = DT
 
 ####### PIPLINE STEP NAMES ########
 COLUMN_TRANSFORMER_STEP_NAME = "Column Transformer"
@@ -75,7 +77,7 @@ ANALYZE_LEARNING = False
 TUNE_HYPER_PARAMETERS = False
 
 # Whether to plot a learning curve to display how the algorithm fares given more training data
-PLOT_LEARNING_CURVES = False
+PLOT_LEARNING_CURVES = True
 
 # Whether or not to plot a validation curve depict the bias-variance trade-off for a given hyper-parameter 
 PLOT_VALIDATION_CURVES = False

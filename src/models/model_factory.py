@@ -5,11 +5,12 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransfo
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.linear_model import LogisticRegression, Perceptron, PassiveAggressiveClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
 
 # Tensorflow imports
 import tensorflow as tf
@@ -107,6 +108,25 @@ def get_keras_classifier_pipeline(data):
     return create_classifier_pipeline(clf, data)
 
 
+def get_passive_agressive_classifier_pipeline(data):
+    """
+    https://scikit-learn.org/0.15/modules/generated/sklearn.linear_model.PassiveAggressiveClassifier.html#sklearn.linear_model.PassiveAggressiveClassifier
+    """
+
+    clf = PassiveAgressiveClassifier()
+
+    return create_classifier_pipeline(clf, data)
+
+
+def get_naive_bayes_classifier_pipeline(data):
+    """
+    https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.GaussianNB.html#sklearn-naive-bayes-gaussiannb
+    """
+
+    clf = GaussianNB()
+
+    return create_classifier_pipeline(clf, data)
+
 def get_dummy_classifier_pipeline(data):
     """
     Dummy Classifier: https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier
@@ -115,6 +135,7 @@ def get_dummy_classifier_pipeline(data):
     clf = DummyClassifier()
 
     return create_classifier_pipeline(clf, data)
+
 
 def get_MLP_classifier_pipeline(data):
     """

@@ -105,43 +105,39 @@ if __name__ == "__main__":
         config.CUR_CLASSIFIER))
     if config.CUR_CLASSIFIER == config.DUMMY:
         cur_pipe = models.get_dummy_classifier_pipeline(data)
-        cur_pipe_name = config.DUMMY
 
     elif config.CUR_CLASSIFIER == config.MLP:
         cur_pipe = models.get_MLP_classifier_pipeline(data)
-        cur_pipe_name = config.MLP
         param_name = '{}__alpha'.format(config.CLASSIFIER_STEP_NAME)
         param_range = 10.0 ** -np.arange(1, 7)
 
     elif config.CUR_CLASSIFIER == config.KNN:
         cur_pipe = models.get_KNN_classifier_pipeline(data)
-        cur_pipe_name = config.KNN
         param_name = '{}__n_neighbors'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 11, 1)
 
     elif config.CUR_CLASSIFIER == config.DT:
         cur_pipe = models.get_DT_classifier_pipeline(data)
-        cur_pipe_name = config.DT
         param_name = '{}__max_depth'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(1, 51)
 
     elif config.CUR_CLASSIFIER == config.PERCEPTRON:
         cur_pipe = models.get_perceptron_classifier_pipeline(data)
-        cur_pipe_name = config.PERCEPTRON
         param_name = '{}__max_iter'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(500, 10000, 500)
 
     elif config.CUR_CLASSIFIER == config.LOGISTIC:
         cur_pipe = models.get_logit_classifier_pipeline(data)
-        cur_name = config.CUR_CLASSIFIER
         param_name = '{}__C'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.arange(0.0, 1.1, 0.10)
 
     elif config.CUR_CLASSIFIER == config.KERAS_CLASSIFIER:
         cur_pipe = models.get_keras_classifier_pipeline(data)
-        cur_pipe_name = config.CUR_CLASSIFIER
         param_name = '{}__batch_size'.format(config.CLASSIFIER_STEP_NAME)
         param_range = np.array([32, 64, 128])
+
+    elif config.CUR_CLASSIFIER == config.NB:
+        cur_pipe = models.get_naive_bayes_classifier_pipeline(data)
 
     else:
         print("The current classifier {} is not recognized".format(
@@ -328,6 +324,7 @@ if __name__ == "__main__":
 
     ######### LEARNING AND VALIDATION CURVES START ###########
     #Plots training and validation set scores for training with different sample sizes, to gauge how more data helps the algorithm. See https://scikit-learn.org/stable/modules/learning_curve.html
+    cur_pipe_name = config.CUR_CLASSIFIER
     if config.PLOT_LEARNING_CURVES:
         print('Training {} classifier for the learning curve...'.format(config.CUR_CLASSIFIER))
         learning_curve_title = "{} Learning Curves".format(cur_pipe_name)
