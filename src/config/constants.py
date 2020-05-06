@@ -23,6 +23,7 @@ DUMMY = "DUMMY"
 LOGISTIC = "LOGISTIC"
 NB = "NAIVE BAYES"
 PA = "PASSIVE AGRESSIVE"
+SGD = "STOCHASIC GRADIENT DESCENT"
 
 KERAS_CLASSIFIER = 'KERAS_CLASSIFIER'
 
@@ -32,7 +33,7 @@ INFER_KERAS_INPUT_SHAPE = True
 # The shape of the feature vector for Keras models needs to be specified prior to training
 KERAS_INPUT_SHAPE = None
 
-CUR_CLASSIFIER = DT
+CUR_CLASSIFIER = SGD
 
 ####### PIPLINE STEP NAMES ########
 COLUMN_TRANSFORMER_STEP_NAME = "Column Transformer"
@@ -53,16 +54,16 @@ TRAINING_SET_SIZE = 0.80
 
 # The number of folds to use for K-Fold Cross Validation. See https://scikit-learn.org/stable/modules/cross_validation.html
 K = 10
-DO_REPEATED_K_FOLD = False
 
 # The number of times to repeat k-fold cross validation with different randomized splits. See https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RepeatedKFold.html
+DO_REPEATED_K_FOLD = False
 REPEATS = 10
 
 #METRIC_LIST = ['accuracy', 'precision', 'recall']
 METRIC_LIST = ['accuracy']
 
 # Whether to diplay additional information during the running of the experiment, chiefly for diagnostic purposes
-VERBOSE = True
+VERBOSE = False
 
 # Whether or not to calibrate the probabilities emitted. See https://scikit-learn.org/stable/modules/calibration.html
 CALIBRATE_PROBABILITY = False

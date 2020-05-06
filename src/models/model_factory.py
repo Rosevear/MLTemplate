@@ -5,7 +5,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransfo
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression, Perceptron, PassiveAggressiveClassifier
+from sklearn.linear_model import LogisticRegression, Perceptron, PassiveAggressiveClassifier, SGDClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.neural_network import MLPClassifier
@@ -110,7 +110,16 @@ def get_passive_agressive_classifier_pipeline(data):
     https://scikit-learn.org/0.15/modules/generated/sklearn.linear_model.PassiveAggressiveClassifier.html#sklearn.linear_model.PassiveAggressiveClassifier
     """
 
-    clf = PassiveAgressiveClassifier()
+    clf = PassiveAggressiveClassifier()
+
+    return create_classifier_pipeline(clf, data)
+
+def get_sgd_classifier_pipeline(data):
+    """
+    https://scikit-learn.org/0.15/modules/generated/sklearn.linear_model.SGDClassifier.html#sklearn.linear_model.SGDClassifier
+    """
+
+    clf = SGDClassifier(loss='hinge', penalty='elasticnet')
 
     return create_classifier_pipeline(clf, data)
 
@@ -147,11 +156,11 @@ def get_MLP_classifier_pipeline(data):
                               learning_rate='adaptive',
                               learning_rate_init=0.001,
                               power_t=0.5,  # Only used for invscaling option of learning_rate
-                              momentum=0.9,  # Only used for SGD
+                              momentum=0.9,  # Only used for SGD optimizer
                               nesterovs_momentum=True,  # Only used for SGD and momentum > 0
                               beta_1=0.9,  # Both betas are paramters for the Adam solver
                               beta_2=0.999,
-                              epsilon=1e-8,  # Adam numerical stability constant
+                              epsilon=1e-8,  # Adam optimizer numerical stability constant
                               max_iter=200,
                               early_stopping=True,
                               verbose=config.VERBOSE,

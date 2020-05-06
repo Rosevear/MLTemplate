@@ -139,8 +139,14 @@ if __name__ == "__main__":
     elif config.CUR_CLASSIFIER == config.NB:
         cur_pipe = models.get_naive_bayes_classifier_pipeline(data)
 
+    elif config.CUR_CLASSIFIER == config.PA:
+        cur_pipe = models.get_passive_agressive_classifier_pipeline(data)
+
+    elif config.CUR_CLASSIFIER == config.SGD:
+        cur_pipe = models.get_sgd_classifier_pipeline(data)
+    
     else:
-        print("The current classifier {} is not recognized".format(
+        exit("The current classifier {} is not recognized".format(
             config.CUR_CLASSIFIER))
 
     # Display some of the data as a sanity check that it is in the desired format
@@ -411,14 +417,14 @@ if __name__ == "__main__":
     ########### CROSS VALIDATION SINGLE PARAMETER SETTING STOP ##########
 
     ########### CROSS VAL CONFUSION MATRIX START ##########
-    #Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
+    # Compute the confusion matrix for investigating the classification performance: https://en.wikipedia.org/wiki/Confusion_matrix
     display_labels = np.array(config.CLASSES)
     cmap = 'viridis'
     ax = None
     xticks_rotation = 'horizontal'
     values_format = None
     include_values = True
-    if config.COMPUTE_CROSS_VAL_CONFUSION_MATRIX:
+    if config.COMPUTE_CROSS_VAL_CONFUSION_MATRIX and not config.IS_TIME_SERIES: # cross_val_predict does not support TimeSeriesSplit out of the box
         """"
         Since the plot_confusion_matrix function actually generates its own predictions based on the X value passed in, passing in the training set would not provide predictions of the folds used in cross-validation
         So we get the values predicted during cross validation and get the confusion matrix from that
@@ -440,7 +446,8 @@ if __name__ == "__main__":
         print("True Negative Rate: {}".format(tn))
         print("False Negative Rate: {}".format(fn))
 
-        #We need to bypass the predictions made in the plot_confusion_matrix function so we create the confusion matrix display directly. See https://github.com/scikit-learn/scikit-learn/blob/95d4f0841/sklearn/metrics/_plot/confusion_matrix.py#L119
+
+        # We need to bypass the predictions made in the plot_confusion_matrix function so we create the confusion matrix display directly. See https://github.com/scikit-learn/scikit-learn/blob/95d4f0841/sklearn/metrics/_plot/confusion_matrix.py#L119
         disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix,
                                       display_labels=display_labels)
         disp.plot(include_values=include_values,

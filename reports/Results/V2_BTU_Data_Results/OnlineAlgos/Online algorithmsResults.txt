@@ -1,0 +1,23 @@
+Online algorithms
+
+Cross validating PERCEPTRON classifier...
+Cross Validation Training set results. Mean: 0.933030045070922 Standard Deviation: 0.015221903102673046
+Cross Validation Dev set results. Mean: 0.8828309305373526 Standard Deviation: 0.07972855287431584
+
+Cross validating MLP classifier...
+Cross Validation Training set results. Mean: 0.9622690560920784 Standard Deviation: 0.012653158383445724
+Cross Validation Dev set results. Mean: 0.8815727391874182 Standard Deviation: 0.08144794991203098
+
+Training NAIVE BAYES classifier for the learning curve...
+Cross validating NAIVE BAYES classifier...
+Cross Validation Training set results. Mean: 0.7021056203220942 Standard Deviation: 0.08488311909592708
+Cross Validation Dev set results. Mean: 0.6455045871559634 Standard Deviation: 0.11160263856386171
+
+Training PASSIVE AGRESSIVE classifier for the learning curve...
+Cross validating PASSIVE AGRESSIVE classifier...
+Cross Validation Training set results. Mean: 0.9309671542851753 Standard Deviation: 0.01821809054386997
+Cross Validation Dev set results. Mean: 0.8525032765399738 Standard Deviation: 0.09083248108434858
+
+Cross validating STOCHASIC GRADIENT DESCENT classifier...
+Cross Validation Training set results. Mean: 0.9505436733262276 Standard Deviation: 0.011203410763697672
+Cross Validation Dev set results. Mean: 0.8816775884665793 Standard Deviation: 0.07322778294971183
