@@ -1,7 +1,4 @@
-VEE Automation Exception Prototype
-
-This repo is a research prototype for the VEE Automation Exception Project by Harris Utilities Smartworks.
-See https://confluence.harrissmartworks.com/display/RD/Project+Notes%3A+VEE+Exception+Automation for more detail.
+ML Prototyping Template
 
 ########## Dependency installation ########
 
@@ -197,6 +194,7 @@ The above commands should suffice for general prototyping purposes (at least to 
 See https://dvc.org/doc/tutorials/get-started/connect-code-and-data
 
 ######Development Mode Installation######
+
 In order for the modules in the src directory to be properly accessible to the main experiment file (and to each other) they need to be on the PYTHONPATH. 
 This can be done most effectively by using setuptools to install the packages (folders with an __init__.py file) they reside in into the site-packages directory, 
 which is by default included in the PYTHONPATH.
@@ -204,10 +202,6 @@ which is by default included in the PYTHONPATH.
 To install the packages run the setup.py script in the root directory (where it is located) with the develop option. This will forge links between the packages such that any changes to them will be reflected in the site-packages directory, so that one does not have to continually reinstall the packages after making changes to them.
 
 Run the following: python setup.py develop
-
-
-####Licenses###
-sklearn: https://github.com/scikit-learn/scikit-learn/blob/master/COPYING
 
 Project Organization
 ------------
