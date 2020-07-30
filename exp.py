@@ -103,6 +103,8 @@ if __name__ == "__main__":
     #NOTE: For each class the param_range varable is only used to setup a range for the validation curve to explore.
     print("Setting up the {} classifier...".format(
         config.CUR_CLASSIFIER))
+    
+    #TODO: Consider encapsulating this into its own object to enforce a cleaner separation between the exprriment as the client and the instantiating code
     if config.CUR_CLASSIFIER == config.DUMMY:
         cur_pipe = models.get_dummy_classifier_pipeline(data)
 
