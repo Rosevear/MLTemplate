@@ -16,7 +16,7 @@ Virtual environments serve as a way to isolate dependencies required for differe
 
 1. Download the Anaconda distribution (ideally installing for all users of the system) from https://www.anaconda.com/distribution/
 
-2. Open the anaconda prompt (which should be installed by the anaconda distribution) and type as below to find where conda is being called from within your shell
+2. Open the anaconda prompt (which should be installed by the anaconda distribution) and type as below to find where conda is being called from within your shell.
 Add the revealed path for the .exe file and Scripts folder to your PATH environment variable (if you want to be able to call conda from the terminal)
 
     where conda
@@ -169,7 +169,7 @@ See https://stackoverflow.com/questions/52331254/how-to-store-artifacts-on-a-ser
 
 # Data Version Control # 
 Large data files can be problematic for vanilla git to handle, especially when the workflow in question demands multiple different versions of large data sets.
-DVC (dta version control, see https://dvc.org/doc/home) is a software solution for managing data and model versioning in an integrated way with git.
+DVC (data version control, see https://dvc.org/doc/home) is a software solution for managing data and model versioning in an integrated way with git.
 
 See https://dvc.org/doc/use-cases/versioning-data-and-model-files for an example use case of DVC to version data nad/or model files: 
 
