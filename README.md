@@ -1,12 +1,12 @@
 ML Prototyping Template
 
-########## Dependency installation ########
+# Dependency installation #
 
 It is possible to install dependencies via the use of an environment file (in .yml format) which captures the relevant conda and pip dependencies.
 
 conda env create -f conda.yml
 
-#########Setting up an ML development environment with Anaconda#########
+# Setting up an ML development environment with Anaconda #
 
 NOTE: These instructions are for Windows 10
 
@@ -91,11 +91,11 @@ To install the Keras github project (independent of Tensorflow), perform the fol
 14. Install DVC: an open source data version control system
     conda install -c conda-forge dvc
 
-######Setting up VSCode########
+# Setting up VSCode #
 
 TODO:
 
-######Setting up Jupyter Lab#######
+# Setting up Jupyter Lab #
 
 The Anaconda distribution comes with the Anaconda Navigator: a program that allows you to navigate a number of tools for the python ecosystem.
 One of the useful programs included in the distribution is JupyterLab: a platform for interactive computing that offers a number of useful features integrated into one place. See https://jupyterlab.readthedocs.io/en/stable/getting_started/overview.html
@@ -114,14 +114,14 @@ Any additional environments to the one specified in the above command must have 
 There appears to be an issue with conda version 4.7 currently (as of Friday, March 20th, 2020). See https://github.com/conda/conda/issues/8836
 If encountering this error try running conda init bash and restarting the shell as per https://github.com/conda/conda/issues/8836#issuecomment-514026318
 
-######Project Configuration#######
+# Project Configuration #
 
 This project uses MLFlow as an experiment management framework (see https://mlflow.org/docs/latest/index.html).
 
 The MLProject file specifies both the execution environment (docker, conda, system), and the entry points for running different portions of the project. This particular project uses a conda environment, which details all of the dependencies and channels used to download those dependencies in the conda.yml file. To run experiments via specific entry points see: https://mlflow.org/docs/latest/projects.html#running-projects
 
-#####Runs and Experiments######
-See  https://mlflow.org/docs/latest/cli.html#mlflow-run for notes on running projects from the command line and here for more comprehensive CLI docs: https://mlflow.org/docs/latest/cli.html#mlflow-run 
+## Runs and Experiments ##
+See https://mlflow.org/docs/latest/cli.html#mlflow-run for notes on running projects from the command line and here for more comprehensive CLI docs: https://mlflow.org/docs/latest/cli.html#mlflow-run 
 
 Experiments are collections of runs that are grouped together for a common task. You can specify a run at the command line when kicking off a run, or set a default experiment 
 via the python api or environment variable. See https://www.mlflow.org/docs/latest/tracking.html#organizing-runs-in-experiments for more detail.
@@ -145,7 +145,7 @@ So, an example command line rune might look as follows:
 
 mlflow run --no-conda -P training_data=./data/raw/sonar.csv --experiment-name test1 --entry-point main .
 
-##### Tracking and Viewing Run Data ######
+## Tracking and Viewing Run Data ##
 
 Local Tracking
 If you log runs to a local mlruns directory, execute  mlflow ui in the directory above it from the command line, to load the logged metadata for all runs that are saved locally. You will be able to access the ui at http://localhost:5000. From here you can search for runs/params/etc, see associated models, and perform some basic visualization of logged metrics. See https://mlflow.org/docs/latest/tracking.html#where-runs-are-recorded for more detail on the default storage location and https://mlflow.org/docs/latest/cli.html#mlflow-ui for options when running the UI.
@@ -167,7 +167,7 @@ While the artifact store is where the models will be saved, and is actually trea
 See https://stackoverflow.com/questions/52331254/how-to-store-artifacts-on-a-server-running-mlflow and https://thegurus.tech/mlflow-production-setup/ for examples.
 
 
-#####Data Version Control########
+# Data Version Control # 
 Large data files can be problematic for vanilla git to handle, especially when the workflow in question demands multiple different versions of large data sets.
 DVC (dta version control, see https://dvc.org/doc/home) is a software solution for managing data and model versioning in an integrated way with git.
 
@@ -193,7 +193,7 @@ dvc pull #Get all of the data referenced by any DVC-files in the project (dvc pu
 The above commands should suffice for general prototyping purposes (at least to start). DVC offers a lot more in terms of connecting the relevant code and data files together in a way that allows for the creation of reproducible pipelines, that may be worth looking into if that can't be handled easily enough with mlflow alone.
 See https://dvc.org/doc/tutorials/get-started/connect-code-and-data
 
-######Development Mode Installation######
+# Python Development Mode Installation #
 
 In order for the modules in the src directory to be properly accessible to the main experiment file (and to each other) they need to be on the PYTHONPATH. 
 This can be done most effectively by using setuptools to install the packages (folders with an __init__.py file) they reside in into the site-packages directory, 
@@ -203,7 +203,7 @@ To install the packages run the setup.py script in the root directory (where it 
 
 Run the following: python setup.py develop
 
-Project Organization
+# Project Organization #
 ------------
 
     ├── LICENSE
